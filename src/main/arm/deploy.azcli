@@ -1,4 +1,19 @@
 #!/bin/bash
+
+#      Copyright (c) Microsoft Corporation.
+# 
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+# 
+#           http://www.apache.org/licenses/LICENSE-2.0
+# 
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -141,7 +156,7 @@ fi
 storageContainerName=${resourceGroupName}"-stageartifacts"
 storageContainerName=$( echo "$storageContainerName" | awk '{print tolower($0)}')
 storageAccountKey=$( az storage account keys list -g "$resourceGroupName" -n "$storageAccountName" -o json | jq -r '.[0].value' )
-if [[ $( az storage container exists --name "$storageContainerName" --account-name "$storageAccountName" -o json | jq '.exists') = false ]]; then
+if [[ $( az storage container exists --name "$storageContainerName" --account-name "$storageAccountName" --account-key "$storageAccountKey" -o json | jq '.exists') = false ]]; then
 	echo "Storage container with name" $storageContainerName "could not be found. Creating new storage container..."
 	set -e
 	(
@@ -154,7 +169,7 @@ fi
 
 #Upload IBM Installation Manager install kit to storage container
 fileName=$(basename "$installKitFile")
-if [[ $( az storage blob exists -n "$fileName" -c "$storageContainerName" --account-name "$storageAccountName" -o json | jq '.exists') = false ]]; then
+if [[ $( az storage blob exists -n "$fileName" -c "$storageContainerName" --account-name "$storageAccountName" --account-key "$storageAccountKey" -o json | jq '.exists') = false ]]; then
 	echo "Storage blob with name" $fileName "could not be found. Creating new storage blob..."
 	set -e
 	(
@@ -177,17 +192,13 @@ installKitUri=$blobEndpoint$storageContainerName/"$fileName"?$sasToken
 
 #parameters JSON
 parametersJson=$( cat $parametersFilePath | jq '.parameters' )
-connectToDB2Server=$( echo $parametersJson | jq '.connectToDB2Server.value' | sed 's/"//g' )
-parametersJson=$( echo $parametersJson | jq --argjson connect "$connectToDB2Server" '.connectToDB2Server.value = $connect' )
-connectToELK=$( echo $parametersJson | jq '.connectToELK.value' | sed 's/"//g' )
-parametersJson=$( echo $parametersJson | jq --argjson elk "$connectToELK" '.connectToELK.value = $elk' )
 parametersJson=$( echo "$parametersJson" | jq --arg uri "$installKitUri" '{"installKitUri": {"value":$uri}} + .' )
 parametersJson=$( echo "$parametersJson" | jq -c '.' )
 
 #Start deployment
 echo "Starting deployment..."
 (
-	az group deployment create --name "$deploymentName" --resource-group "$resourceGroupName" \
+	az deployment group create --name "$deploymentName" --resource-group "$resourceGroupName" \
 		--template-file "$templateFilePath" --parameters "$parametersJson"
 )
 

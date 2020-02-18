@@ -22,7 +22,7 @@
             "type": "string"
         },
         "osDiskType": {
-            "defaultValue": "StandardSSD_LRS",
+            "defaultValue": "Standard_LRS",
             "type": "string"
         },
         "addressPrefix": {
@@ -70,6 +70,8 @@
         "networkSecurityGroupRef": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
         "networkInterfaceRef": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]",
         "virtualNetworkRef": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+        "storageAccountName": "[concat('storage',take(replace(parameters('guidValue'),'-',''),6))]",
+        "storageRef": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "virtualMachineRef": "[resourceId('Microsoft.Compute/virtualMachines', variables('virtualMachineName'))]",
         "scriptLocation": "[uri(parameters('_artifactsLocation'), 'scripts/')]",
         "arguments": "[concat(' -l \"',parameters('installKitUri'),'\" -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]"
@@ -89,7 +91,7 @@
                             "sourcePortRange": "*",
                             "sourceAddressPrefix": "*",
                             "destinationAddressPrefix": "*",
-                            "access": "Allow",
+                            "access": "Deny",
                             "priority": 320,
                             "direction": "Inbound",
                             "destinationPortRanges": [
@@ -175,12 +177,24 @@
             }
         },
         {
+            "name": "[variables('storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "location": "[parameters('location')]",
+            "properties": {},
+            "kind": "Storage",
+            "sku": {
+                "name": "[parameters('osDiskType')]"
+            }
+        },
+        {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2019-03-01",
             "name": "[variables('virtualMachineName')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('networkInterfaceRef')]"
+                "[variables('networkInterfaceRef')]",
+                "[variables('storageRef')]"
             ],
             "properties": {
                 "hardwareProfile": {
@@ -196,8 +210,8 @@
                     "osDisk": {
                         "name": "[variables('diskName')]",
                         "createOption": "FromImage",
-                        "managedDisk": {
-                            "storageAccountType": "[parameters('osDiskType')]"
+                        "vhd": {
+                            "uri": "[concat(reference(variables('storageAccountName')).primaryEndpoints.blob, 'vhds/', variables('virtualMachineName'), '.vhd')]"
                         }
                     }
                 },
