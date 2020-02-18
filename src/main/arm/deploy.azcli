@@ -177,10 +177,6 @@ installKitUri=$blobEndpoint$storageContainerName/"$fileName"?$sasToken
 
 #parameters JSON
 parametersJson=$( cat $parametersFilePath | jq '.parameters' )
-connectToDB2Server=$( echo $parametersJson | jq '.connectToDB2Server.value' | sed 's/"//g' )
-parametersJson=$( echo $parametersJson | jq --argjson connect "$connectToDB2Server" '.connectToDB2Server.value = $connect' )
-connectToELK=$( echo $parametersJson | jq '.connectToELK.value' | sed 's/"//g' )
-parametersJson=$( echo $parametersJson | jq --argjson elk "$connectToELK" '.connectToELK.value = $elk' )
 parametersJson=$( echo "$parametersJson" | jq --arg uri "$installKitUri" '{"installKitUri": {"value":$uri}} + .' )
 parametersJson=$( echo "$parametersJson" | jq -c '.' )
 
