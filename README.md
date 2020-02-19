@@ -22,4 +22,6 @@
     ```
     ./deploy.azcli -n <deploymentName> -f <installKitFile> -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation>
     ```
- 7. Once the deployment is complete, we can capture the created VM to a custom image, which consists of RHEL 7.4, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0
+
+## After deployment
+ 1. Once the deployment is complete, we can capture the created VM to a custom image, which consists of RHEL 7.4, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0
