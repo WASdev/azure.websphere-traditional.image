@@ -24,4 +24,5 @@
     ```
 
 ## After deployment
- 1. Once the deployment is complete, we can capture the created VM to a custom image, which consists of RHEL 7.4, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0
+ 1. You can [capture the source VM to a custom image](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image), which consists of RHEL 7.4, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0, so it can be reused to create VM instances based on it using the same subscription;
+ 2. Similar to creating a custom private image, you can also [create a Virtual Machine offer in Azure Marketplace](https://docs.microsoft.com/en-us/azure/marketplace/cloud-partner-portal/virtual-machine/cpp-virtual-machine-offer), which is globally public and accessible.
