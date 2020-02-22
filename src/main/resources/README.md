@@ -26,7 +26,7 @@
 - Description
   - RHEL 7.4, IBM WebSphere 9.0.5 & JDK 8.0 pre-installed
 - Hide this SKU?
-  - No
+  - Yes (*Hide this SKU from Azure Marketplace as its only deployed via Solution Templates*)
 - Cloud Availability
   - Public Azure
 - Cloud Availability
