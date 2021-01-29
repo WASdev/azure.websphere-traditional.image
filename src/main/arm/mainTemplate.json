@@ -58,29 +58,28 @@
         }
     },
     "variables": {
-        "virtualMachineName": "[concat('wasVM', take(replace(parameters('guidValue'),'-',''),6))]",
-        "dnsLabelPrefix": "[concat(parameters('dnsLabelPrefix'), take(replace(parameters('guidValue'),'-',''),6))]",
-        "virtualNetworkName": "[concat(variables('dnsLabelPrefix'), '-vnet')]",
-        "networkSecurityGroupName": "[concat(variables('dnsLabelPrefix'), '-nsg')]",
-        "networkInterfaceName": "[concat(variables('virtualMachineName'), '-if')]",
-        "publicIPAddressName": "[concat(variables('virtualMachineName'), '-ip')]",
-        "diskName": "[concat(variables('virtualMachineName'), '-disk')]",
-        "publicIPAddressRef": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
-        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), parameters('subnetName'))]",
-        "networkSecurityGroupRef": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
-        "networkInterfaceRef": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]",
-        "virtualNetworkRef": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
-        "storageAccountName": "[concat('storage',take(replace(parameters('guidValue'),'-',''),6))]",
-        "storageRef": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
-        "virtualMachineRef": "[resourceId('Microsoft.Compute/virtualMachines', variables('virtualMachineName'))]",
-        "scriptLocation": "[uri(parameters('_artifactsLocation'), 'scripts/')]",
-        "arguments": "[concat(' -l \"',parameters('installKitUri'),'\" -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]"
+        "const_arguments": "[concat(' -l \"',parameters('installKitUri'),'\" -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]",
+        "const_dnsLabelPrefix": "[concat(parameters('dnsLabelPrefix'), take(replace(parameters('guidValue'),'-',''),6))]",
+        "const_scriptLocation": "[uri(parameters('_artifactsLocation'), 'scripts/')]",
+        "name_networkInterface": "[concat(variables('name_virtualMachine'), '-if')]",
+        "name_networkSecurityGroup": "[concat(variables('const_dnsLabelPrefix'), '-nsg')]",
+        "name_publicIPAddress": "[concat(variables('name_virtualMachine'), '-ip')]",
+        "name_storageAccount": "[concat('storage',take(replace(parameters('guidValue'),'-',''),6))]",
+        "name_virtualMachine": "[concat('wasVM', take(replace(parameters('guidValue'),'-',''),6))]",
+        "name_virtualNetwork": "[concat(variables('const_dnsLabelPrefix'), '-vnet')]",
+        "ref_networkInterface": "[resourceId('Microsoft.Network/networkInterfaces', variables('name_networkInterface'))]",
+        "ref_networkSecurityGroup": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('name_networkSecurityGroup'))]",
+        "ref_publicIPAddress": "[resourceId('Microsoft.Network/publicIPAddresses', variables('name_publicIPAddress'))]",
+        "ref_storage": "[resourceId('Microsoft.Storage/storageAccounts', variables('name_storageAccount'))]",
+        "ref_subnet": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('name_virtualNetwork'), parameters('subnetName'))]",
+        "ref_virtualMachine": "[resourceId('Microsoft.Compute/virtualMachines', variables('name_virtualMachine'))]",
+        "ref_virtualNetwork": "[resourceId('Microsoft.Network/virtualNetworks', variables('name_virtualNetwork'))]"
     },
     "resources": [
         {
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2019-06-01",
-            "name": "[variables('networkSecurityGroupName')]",
+            "name": "[variables('name_networkSecurityGroup')]",
             "location": "[parameters('location')]",
             "properties": {
                 "securityRules": [
@@ -105,10 +104,10 @@
         {
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2019-06-01",
-            "name": "[variables('virtualNetworkName')]",
+            "name": "[variables('name_virtualNetwork')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('networkSecurityGroupRef')]"
+                "[variables('ref_networkSecurityGroup')]"
             ],
             "properties": {
                 "addressSpace": {
@@ -123,38 +122,38 @@
         {
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2019-06-01",
-            "name": "[concat(variables('virtualNetworkName'), '/', parameters('subnetName'))]",
+            "name": "[concat(variables('name_virtualNetwork'), '/', parameters('subnetName'))]",
             "dependsOn": [
-                "[variables('virtualNetworkRef')]",
-                "[variables('networkSecurityGroupRef')]"
+                "[variables('ref_virtualNetwork')]",
+                "[variables('ref_networkSecurityGroup')]"
             ],
             "properties": {
                 "addressPrefix": "[parameters('subnetAddressPrefix')]",
                 "networkSecurityGroup": {
-                    "id": "[variables('networkSecurityGroupRef')]"
+                    "id": "[variables('ref_networkSecurityGroup')]"
                 }
             }
         },                
         {
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2019-06-01",
-            "name": "[variables('publicIPAddressName')]",
+            "name": "[variables('name_publicIPAddress')]",
             "location": "[parameters('location')]",
             "properties": {
                 "publicIPAllocationMethod": "Dynamic",
                 "dnsSettings": {
-                    "domainNameLabel": "[variables('dnsLabelPrefix')]"
+                    "domainNameLabel": "[variables('const_dnsLabelPrefix')]"
                 }
             }
         },
         {
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2019-06-01",
-            "name": "[variables('networkInterfaceName')]",
+            "name": "[variables('name_networkInterface')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('publicIPAddressRef')]",
-                "[variables('subnetRef')]"
+                "[variables('ref_publicIPAddress')]",
+                "[variables('ref_subnet')]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -163,10 +162,10 @@
                         "properties": {
                             "privateIPAllocationMethod": "Dynamic",
                             "publicIPAddress": {
-                                "id": "[variables('publicIPAddressRef')]"
+                                "id": "[variables('ref_publicIPAddress')]"
                             },
                             "subnet": {
-                                "id": "[variables('subnetRef')]"
+                                "id": "[variables('ref_subnet')]"
                             }
                         }
                     }
@@ -177,7 +176,7 @@
             }
         },
         {
-            "name": "[variables('storageAccountName')]",
+            "name": "[variables('name_storageAccount')]",
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2019-06-01",
             "location": "[parameters('location')]",
@@ -190,11 +189,11 @@
         {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2019-03-01",
-            "name": "[variables('virtualMachineName')]",
+            "name": "[variables('name_virtualMachine')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('networkInterfaceRef')]",
-                "[variables('storageRef')]"
+                "[variables('ref_networkInterface')]",
+                "[variables('ref_storage')]"
             ],
             "properties": {
                 "hardwareProfile": {
@@ -208,22 +207,22 @@
                         "version": "latest"
                     },
                     "osDisk": {
-                        "name": "[variables('diskName')]",
+                        "name": "[concat(variables('name_virtualMachine'), '-disk')]",
                         "createOption": "FromImage",
                         "vhd": {
-                            "uri": "[concat(reference(variables('storageAccountName')).primaryEndpoints.blob, 'vhds/', variables('virtualMachineName'), '.vhd')]"
+                            "uri": "[concat(reference(variables('name_storageAccount')).primaryEndpoints.blob, 'vhds/', variables('name_virtualMachine'), '.vhd')]"
                         }
                     }
                 },
                 "osProfile": {
-                    "computerName": "[variables('virtualMachineName')]",
+                    "computerName": "[variables('name_virtualMachine')]",
                     "adminUsername": "[parameters('vmAdminId')]",
                     "adminPassword": "[parameters('vmAdminPwd')]"
                 },
                 "networkProfile": {
                     "networkInterfaces": [
                         {
-                            "id": "[variables('networkInterfaceRef')]"
+                            "id": "[variables('ref_networkInterface')]"
                         }
                     ]
                 }
@@ -232,10 +231,10 @@
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "apiVersion": "2019-03-01",
-            "name": "[concat(variables('virtualMachineName'), '/CustomScript')]",
+            "name": "[concat(variables('name_virtualMachine'), '/CustomScript')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('virtualMachineRef')]"
+                "[variables('ref_virtualMachine')]"
             ],
             "properties": {
                 "autoUpgradeMinorVersion": true,
@@ -244,9 +243,9 @@
                 "typeHandlerVersion": "2.0",
                 "settings": {
                     "fileUris": [
-                        "[uri(variables('scriptLocation'), concat('install.sh', parameters('_artifactsLocationSasToken')))]"
+                        "[uri(variables('const_scriptLocation'), concat('install.sh', parameters('_artifactsLocationSasToken')))]"
                     ],
-                    "commandToExecute": "[concat('sh install.sh', variables('arguments'))]"
+                    "commandToExecute": "[concat('sh install.sh', variables('const_arguments'))]"
                 }
             }
         }
