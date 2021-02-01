@@ -195,6 +195,9 @@
                 "[variables('ref_networkInterface')]",
                 "[variables('ref_storage')]"
             ],
+            "tags": {
+                "SkipGreenTeamLinuxSSHAuthForResource": true
+            },
             "properties": {
                 "hardwareProfile": {
                     "vmSize": "[parameters('vmSize')]"
