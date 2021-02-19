@@ -36,20 +36,21 @@
 
 ### Creating Virtual Machine offer in Azure Marketplace
 
-1. Deploy an Azure VM provisioned with RHEL, WebSphere & JDK (e.g., RHEL 7.4, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0). Use different combinations among OS, WebSphere and JDK per your requirements. If you want to install WebSphere and JDK in a separate data disk, only provision the VM with RHEL. Manual deployment or using the tailored ARM template works.
+1. Deploy an Azure VM provisioned with RHEL, WebSphere & JDK (e.g., RHEL 7.4, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0). Use different combinations of OS, WebSphere and JDK per your requirements. If you want to install WebSphere and JDK in a separate data disk, only provision the VM with RHEL. Manual deployment or using the tailored ARM template works.
    1. Use un-managed disk instead of managed disk for VM provision. By doing so, the VHD attached to the VM is stored in the storage account, which can be accessed later during the certification process of publishing VM image into Azure Marketplace
    1. This repo is an example on how to create an un-managed disk in the storage account using ARM template;
-1. [Optional] Adding unmanaged data disks is currently not supported at the time of VM creation. You can add them after the VM is created. SSH into the VM and install the specific version of WebSphere and JDK.
-1. SSH into the provisioned VM
-   1. Delete all sensitive files that you don't want them appear in image
-   1. `sudo waagent -deprovision+user -force`
-   1. exit
-1. De-allocate VM: `az vm deallocate --resource-group <resourceGroupName> --name <vmName>`
-1. Generalize VM: `az vm generalize --resource-group <resourceGroupName> --name <vmName>`
-1. [Optional] To test if the VHD of de-allocated and generalized VM works, you can create image and use it for creating new VM instances to verify
-   1. `az image create --resource-group <resourceGroupName> --name <imageName> --source <vmName>`
-   1. `az vm create --resource-group <resourceGroupName> --name <newVMInstanceName> --image <imageId> --admin-username <userName> --ssh-key-value ~/.ssh/id_rsa.pub`
-1. Create virtual machine offer which consists of RHEL, WebSphere & JDK using the following docs/references:
+   1. [**Optional**] Adding unmanaged data disks is currently not supported at the time of VM creation. You can add them after the VM is created. SSH into the VM and install the specific version of WebSphere and JDK.
+1. [Generate VM image](https://docs.microsoft.com/azure/virtual-machines/linux/capture-image):
+   1. SSH into the provisioned VM
+      1. Delete all sensitive files that you don't want them appear in image
+      1. `sudo waagent -deprovision+user -force`
+      1. exit
+   1. De-allocate VM: `az vm deallocate --resource-group <resourceGroupName> --name <vmName>`
+   1. Generalize VM: `az vm generalize --resource-group <resourceGroupName> --name <vmName>`
+   1. [**Optional**] To test if the VHD of de-allocated and generalized VM works, you can create image and use it for creating new VM instances to verify
+      1. `az image create --resource-group <resourceGroupName> --name <imageName> --source <vmName>`
+      1. `az vm create --resource-group <resourceGroupName> --name <newVMInstanceName> --image <imageId> --admin-username <userName> --ssh-key-value ~/.ssh/id_rsa.pub`
+1. Create virtual machine offer on Azure Marketplace using the VM image:
    1. [How to plan a virtual machine offer](https://docs.microsoft.com/azure/marketplace/marketplace-virtual-machines)
    1. [How to create plans for a virtual machine offer](https://docs.microsoft.com/azure/marketplace/azure-vm-create-plans)
    1. [How to create a virtual machine using your own image](https://docs.microsoft.com/azure/marketplace/azure-vm-create-using-own-image)
