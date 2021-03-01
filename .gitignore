@@ -4,3 +4,4 @@ target
 .settings
 *.versionsBackup
 .classpath
+.DS_Store
