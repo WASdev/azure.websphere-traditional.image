@@ -56,3 +56,30 @@
    1. [How to create a virtual machine using your own image](https://docs.microsoft.com/azure/marketplace/azure-vm-create-using-own-image)
    1. [How to generate a SAS URI for a VM image](https://docs.microsoft.com/azure/marketplace/azure-vm-get-sas-uri)
 1. Once the VM offer created successfully in Azure Marketplace, try to deploy a virtual machine using this VM offer and export the ARM template, where you can find how to correctly reference the VM offer in the upstream ARM template.
+
+## Roadmap to MVP
+
+1. CI/CD pipeline development.
+
+   1. Meet the necessary storage explorer other VM base image preconditions.
+
+   1. Make pipeline that builds existing VM image, based on prototype.
+
+   1. Verify that the image built from the pipeline can be used from a
+      simple ARM template that starts the VM only.
+
+      1. Create the simple ARM template that deploys the VM only. Use the [single node WLS ARM template](https://github.com/wls-eng/arm-oraclelinux-wls/blob/develop/src/main/arm/mainTemplate.json) as a guide.
+  
+1. Perform entitlement check and patching during **cloud-init**.
+
+   1. Get an IBMid that has the necessary entitlements.
+
+   1. Validate PII can be removed or redacted from deployment logs.
+
+   1. Validate that the ability to patch is sufficient as an entitlement check.
+
+1. Update the ARM template for [azure.websphere-traditional.cluster](https://github.com/WASdev/azure.websphere-traditional.cluster).
+
+   1. Use new base image from pipeline.
+   
+   1. Make any necessary changes to Jianguo's appoach from the prototype.
