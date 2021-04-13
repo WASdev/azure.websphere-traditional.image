@@ -59,7 +59,7 @@
 
 ## Roadmap to MVP
 
-1. CI/CD pipeline development.
+1. CI/CD pipeline development. [gh-2-ci-cd-base-image](https://github.com/WASdev/azure.websphere-traditional.image/issues/2)
 
    1. Meet the necessary storage explorer other VM base image preconditions.
 
@@ -70,15 +70,25 @@
 
       1. Create the simple ARM template that deploys the VM only. Use the [single node WLS ARM template](https://github.com/wls-eng/arm-oraclelinux-wls/blob/develop/src/main/arm/mainTemplate.json) as a guide.
   
-1. Perform entitlement check and patching during **cloud-init**.
+1. Perform entitlement check and patching during **cloud-init**. [gh-7-cloud-init](https://github.com/WASdev/azure.websphere-traditional.image/issues/7)
 
    1. Get an IBMid that has the necessary entitlements.
 
    1. Validate PII can be removed or redacted from deployment logs.
 
    1. Validate that the ability to patch is sufficient as an entitlement check.
+   
+1. Create Azure Marketplace Azure Application entry for tWAS cluster. [gh-8-marketplace-entry](https://github.com/WASdev/azure.websphere-traditional.image/issues/8)
 
-1. Update the ARM template for [azure.websphere-traditional.cluster](https://github.com/WASdev/azure.websphere-traditional.cluster).
+   1. Initial creation.
+
+   1. Fill out marketing verbiage
+
+   1. Upload zip.
+
+   1. Test preview.
+
+1. Update the ARM template for [azure.websphere-traditional.cluster](https://github.com/WASdev/azure.websphere-traditional.cluster). [gh-9-update-arm-template](https://github.com/WASdev/azure.websphere-traditional.image/issues/9)
 
    1. Use new base image from pipeline.
    
