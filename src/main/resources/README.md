@@ -7,11 +7,11 @@
 ## Offer Settings
 
 - Offer Id
-  - rhel74-was-jdk
+  - rhel83-was-jdk
 - Publisher ID
   - ibm ???
 - Name
-  - RHEL 7.4 with IBM WebSphere & JDK pre-installed
+  - RHEL 8_3 with IBM WebSphere & JDK pre-installed
 
 ## SKU Settings
 - SKU ID
@@ -20,11 +20,11 @@
 ### SKU Details
 
 - Title
-  - RHEL 7.4, IBM WebSphere 9.0.5 & JDK 8.0
+  - RHEL 8_3, IBM WebSphere 9.0.5 & JDK 8.0
 - Summary
-  - RHEL 7.4, IBM WebSphere 9.0.5 & JDK 8.0 pre-installed
+  - RHEL 8_3, IBM WebSphere 9.0.5 & JDK 8.0 pre-installed
 - Description
-  - RHEL 7.4, IBM WebSphere 9.0.5 & JDK 8.0 pre-installed
+  - RHEL 8_3, IBM WebSphere 9.0.5 & JDK 8.0 pre-installed
 - Hide this SKU?
   - Yes (*Hide this SKU from Azure Marketplace as its only deployed via Solution Templates*)
 - Cloud Availability
@@ -50,7 +50,7 @@
 - Select Operating System Type
   - Red Hat Enterprise Linux
 - OS Friendly Name
-  - RHEL 7.4
+  - RHEL 8_3
 - Recommended VM Sizes
   - A1 Standard
   - D1 Standard
@@ -64,7 +64,8 @@
 #### Disk Version
 - VM image
   - Disk Version: 9.0.5
-  - OS VHD URL: https://storage99ac93.blob.core.windows.net/vhds/wasVM99ac93.vhd?st=2020-02-19T03%3A38%3A00Z&se=2020-03-15T03%3A38%3A00Z&sp=rl&sv=2018-03-28&sr=c&sig=x%2BSDGNNfZws25dhb91HFqoS6j%2FBifUeq5hVz5a%2F0kNE%3D
+  - OS disk VHD URL: Refer to [How to generate a SAS URI for a VM image](https://docs.microsoft.com/azure/marketplace/azure-vm-get-sas-uri)
+  - Data disk VHD URL: Refer to [How to generate a SAS URI for a VM image](https://docs.microsoft.com/azure/marketplace/azure-vm-get-sas-uri)
 
 ## Channel Info
 
@@ -80,17 +81,17 @@
 ### Overview
 
 - Title
-  - RHEL 7.4, IBM WebSphere & JDK
+  - RHEL 8_3, IBM WebSphere & JDK
 - Summary
-  - RHEL 7.4, IBM WebSphere & JDK pre-installed
+  - RHEL 8_3, IBM WebSphere & JDK pre-installed
 - Long Summary
-  - RHEL 7.4, IBM WebSphere & JDK pre-installed
+  - RHEL 8_3, IBM WebSphere & JDK pre-installed
 - Description
-  - RHEL 7.4, IBM WebSphere & JDK pre-installed
+  - RHEL 8_3, IBM WebSphere & JDK pre-installed
 - Offer available to Microsoft CSP Reseller channel?
   - No
 - Marketing identifier 
-  - rhel74-was-jdk
+  - rhel83-was-jdk
 - Preview Subscription Ids
   - ???
 
@@ -161,4 +162,3 @@
   - TBD
 - Government Azure
   - TBD
-

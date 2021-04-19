@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ibm.websphere.azure</groupId>
-    <artifactId>arm-rhel-was-nd-image</artifactId>
+    <artifactId>azure.websphere-traditional.image</artifactId>
     <version>1.0.2</version>
     
     <parent>
