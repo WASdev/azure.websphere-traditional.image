@@ -52,13 +52,35 @@
         "installKitUri": {
             "type": "string"
         },
+        "wasNDTraditional": {
+            "defaultValue": "com.ibm.websphere.ND.v90_9.0.5007.20210301_1241",
+            "type": "string"
+        },
+        "ibmJavaSDK": {
+            "defaultValue": "com.ibm.java.jdk.v8_8.0.6026.20210226_0840",
+            "type": "string"
+        },
         "guidValue": {
             "defaultValue": "[newGuid()]",
             "type": "string"
         }
     },
     "variables": {
-        "const_arguments": "[concat(' -l \"',parameters('installKitUri'),'\" -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]",
+        "const_arguments": "[concat(' -l \"',parameters('installKitUri'),'\" -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'),' -t ',parameters('wasNDTraditional'),' -j ',parameters('ibmJavaSDK'))]",
+        "const_cloudInitScript": "#!/bin/bash
+disk=sda
+sudo parted /dev/${disk} --script mklabel gpt mkpart xfspart xfs 0% 100%
+if [ $? -ne 0 ]; then
+    disk=sdb
+    sudo parted /dev/${disk} --script mklabel gpt mkpart xfspart xfs 0% 100%
+    if [ $? -ne 0 ]; then
+        disk=sdc
+        sudo parted /dev/${disk} --script mklabel gpt mkpart xfspart xfs 0% 100%
+    fi
+fi
+sudo mkfs.xfs /dev/${disk}1
+sudo partprobe /dev/${disk}1
+sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
         "const_dnsLabelPrefix": "[concat(parameters('dnsLabelPrefix'), take(replace(parameters('guidValue'),'-',''),6))]",
         "const_scriptLocation": "[uri(parameters('_artifactsLocation'), 'scripts/')]",
         "name_networkInterface": "[concat(variables('name_virtualMachine'), '-if')]",
@@ -90,7 +112,7 @@
                             "sourcePortRange": "*",
                             "sourceAddressPrefix": "*",
                             "destinationAddressPrefix": "*",
-                            "access": "Deny",
+                            "access": "Allow",
                             "priority": 320,
                             "direction": "Inbound",
                             "destinationPortRanges": [
@@ -188,7 +210,7 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2019-03-01",
+            "apiVersion": "2020-06-01",
             "name": "[variables('name_virtualMachine')]",
             "location": "[parameters('location')]",
             "dependsOn": [
@@ -206,7 +228,7 @@
                     "imageReference": {
                         "publisher": "RedHat",
                         "offer": "RHEL",
-                        "sku": "7.4",
+                        "sku": "8_3",
                         "version": "latest"
                     },
                     "osDisk": {
@@ -215,12 +237,24 @@
                         "vhd": {
                             "uri": "[concat(reference(variables('name_storageAccount')).primaryEndpoints.blob, 'vhds/', variables('name_virtualMachine'), '.vhd')]"
                         }
-                    }
+                    },
+                    "dataDisks": [
+                        {
+                            "name": "datadisk1",
+                            "diskSizeGB": 900,
+                            "lun": 0,
+                            "vhd": {
+                                "uri": "[concat(reference(variables('name_storageAccount')).primaryEndpoints.blob, 'vhds/', variables('name_virtualMachine'), 'datadisk1.vhd')]"
+                            },
+                            "createOption": "Empty"
+                        }
+                    ]
                 },
                 "osProfile": {
                     "computerName": "[variables('name_virtualMachine')]",
                     "adminUsername": "[parameters('vmAdminId')]",
-                    "adminPassword": "[parameters('vmAdminPwd')]"
+                    "adminPassword": "[parameters('vmAdminPwd')]",
+                    "customData": "[base64(variables('const_cloudInitScript'))]"
                 },
                 "networkProfile": {
                     "networkInterfaces": [
@@ -233,7 +267,7 @@
         },
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
-            "apiVersion": "2019-03-01",
+            "apiVersion": "2020-06-01",
             "name": "[concat(variables('name_virtualMachine'), '/CustomScript')]",
             "location": "[parameters('location')]",
             "dependsOn": [
@@ -246,7 +280,8 @@
                 "typeHandlerVersion": "2.0",
                 "settings": {
                     "fileUris": [
-                        "[uri(variables('const_scriptLocation'), concat('install.sh', parameters('_artifactsLocationSasToken')))]"
+                        "[uri(variables('const_scriptLocation'), concat('install.sh', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(variables('const_scriptLocation'), concat('was-check.sh', parameters('_artifactsLocationSasToken')))]"
                     ],
                     "commandToExecute": "[concat('sh install.sh', variables('const_arguments'))]"
                 }
