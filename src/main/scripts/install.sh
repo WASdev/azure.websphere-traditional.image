@@ -14,7 +14,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-while getopts "l:u:p:t:j:" opt; do
+while getopts "l:u:p:" opt; do
     case $opt in
         l)
             imKitLocation=$OPTARG #SAS URI of the IBM Installation Manager install kit in Azure Storage
@@ -25,20 +25,8 @@ while getopts "l:u:p:t:j:" opt; do
         p)
             password=$OPTARG #password of IBM user id for downloading artifacts from IBM web site
         ;;
-        t)
-            wasNDTraditional=$OPTARG #IBM WebSphere Application Server ND Traditional version
-        ;;
-        j)
-            ibmJavaSDK=$OPTARG #IBM Java SDK version
-        ;;        
     esac
 done
-
-# Variables
-SSLPREF="com.ibm.cic.common.core.preferences.ssl.nonsecureMode=false"
-DOWNLOADPREF="com.ibm.cic.common.core.preferences.preserveDownloadedArtifacts=false"
-imKitName=agent.installer.linux.gtk.x86_64_1.9.zip
-repositoryUrl=https://www.ibm.com/software/repositorymanager/entitled
 
 # Wait untile the data disk is partitioned and mounted
 output=$(df -h)
@@ -51,21 +39,33 @@ done
 name=$(df -h | grep "/datadrive" | awk '{print $1;}' | grep -Po "(?<=\/dev\/).*")
 echo "UUID=$(blkid | grep -Po "(?<=\/dev\/${name}\: UUID=\")[^\"]*(?=\".*)")   /datadrive   xfs   defaults,nofail   1   2" >> /etc/fstab
 
+# Update applications installed on the system
+yum update -y
+
+# Move tWAS entitlement check and application patch script to /var/lib/cloud/scripts/per-instance
+mv was-check.sh /var/lib/cloud/scripts/per-instance
+
+# Move tWAS installation properties file to /datadrive
+mv virtualimage.properties /datadrive
+
+# Get tWAS installation properties
+source /datadrive/virtualimage.properties
+
 # Create installation directories
-mkdir -p /datadrive/IBM/InstallationManager/V1.9 && mkdir -p /datadrive/IBM/WebSphere/ND/V9 && mkdir -p /datadrive/IBM/IMShared
+mkdir -p ${IM_INSTALL_DIRECTORY} && mkdir -p ${WAS_ND_INSTALL_DIRECTORY} && mkdir -p ${IM_SHARED_DIRECTORY}
 
 # Install IBM Installation Manager
-wget -O "$imKitName" "$imKitLocation" -q
+wget -O "$IM_INSTALL_KIT" "$imKitLocation" -q
 mkdir im_installer
-unzip -q "$imKitName" -d im_installer
-./im_installer/userinstc -log log_file -acceptLicense -installationDirectory /datadrive/IBM/InstallationManager/V1.9
+unzip -q "$IM_INSTALL_KIT" -d im_installer
+./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
 # Install IBM WebSphere Application Server Network Deployment V9 using IBM Instalation Manager
-/datadrive/IBM/InstallationManager/V1.9/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
     -userName "$userName" -userPassword "$password" -passportAdvantage
-/datadrive/IBM/InstallationManager/V1.9/eclipse/tools/imcl install "$wasNDTraditional" "$ibmJavaSDK" -repositories "$repositoryUrl" \
-    -installationDirectory /datadrive/IBM/WebSphere/ND/V9/ -sharedResourcesDirectory /datadrive/IBM/IMShared/ \
-    -secureStorageFile storage_file -acceptLicense -preferences $SSLPREF,$DOWNLOADPREF -showProgress
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_ND_TRADITIONAL" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
+    -installationDirectory ${WAS_ND_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
+    -secureStorageFile storage_file -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
-# Move WAS entitlement check and application patch script to /var/lib/cloud/scripts/per-instance
-mv was-check.sh /var/lib/cloud/scripts/per-instance
+# Remove temporary files
+rm -rf storage_file && rm -rf log_file

@@ -52,21 +52,13 @@
         "installKitUri": {
             "type": "string"
         },
-        "wasNDTraditional": {
-            "defaultValue": "com.ibm.websphere.ND.v90_9.0.5007.20210301_1241",
-            "type": "string"
-        },
-        "ibmJavaSDK": {
-            "defaultValue": "com.ibm.java.jdk.v8_8.0.6026.20210226_0840",
-            "type": "string"
-        },
         "guidValue": {
             "defaultValue": "[newGuid()]",
             "type": "string"
         }
     },
     "variables": {
-        "const_arguments": "[concat(' -l \"',parameters('installKitUri'),'\" -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'),' -t ',parameters('wasNDTraditional'),' -j ',parameters('ibmJavaSDK'))]",
+        "const_arguments": "[concat(' -l \"',parameters('installKitUri'),'\" -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]",
         "const_cloudInitScript": "#!/bin/bash
 disk=sda
 sudo parted /dev/${disk} --script mklabel gpt mkpart xfspart xfs 0% 100%
@@ -281,7 +273,8 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
                 "settings": {
                     "fileUris": [
                         "[uri(variables('const_scriptLocation'), concat('install.sh', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(variables('const_scriptLocation'), concat('was-check.sh', parameters('_artifactsLocationSasToken')))]"
+                        "[uri(variables('const_scriptLocation'), concat('was-check.sh', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(variables('const_scriptLocation'), concat('virtualimage.properties', parameters('_artifactsLocationSasToken')))]"
                     ],
                     "commandToExecute": "[concat('sh install.sh', variables('const_arguments'))]"
                 }
