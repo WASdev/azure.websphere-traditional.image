@@ -49,16 +49,13 @@
         "vmAdminPwd": {
             "type": "securestring"
         },
-        "installKitUri": {
-            "type": "string"
-        },
         "guidValue": {
             "defaultValue": "[newGuid()]",
             "type": "string"
         }
     },
     "variables": {
-        "const_arguments": "[concat(' -l \"',parameters('installKitUri'),'\" -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]",
+        "const_arguments": "[concat(' -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]",
         "const_cloudInitScript": "#!/bin/bash
 disk=sda
 sudo parted /dev/${disk} --script mklabel gpt mkpart xfspart xfs 0% 100%

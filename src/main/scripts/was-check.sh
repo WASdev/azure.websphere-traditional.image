@@ -33,7 +33,7 @@ if [ ${#ibmIdCredentials[@]} -eq 2 ]; then
         -userName "$userName" -userPassword "$password" -passportAdvantage
     if [ $? -eq 0 ]; then
         output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
-        echo $output | grep -q "ND.v90_9.0.5007" && entitled=true
+        echo $output | grep -q "$WAS_ND_VERSION_ENTITLED" && entitled=true
     else
         echo "Cannot connect to Passport Advantage." >> /var/log/cloud-init-was.log
     fi

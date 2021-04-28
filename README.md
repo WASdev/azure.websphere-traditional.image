@@ -4,7 +4,6 @@
 
 1. Register an [Azure subscription](https://azure.microsoft.com/).
 1. Register an [IBM id](https://www.ibm.com/account/reg/sg-en/signup?formid=urx-19776). Contact IBM to make it entitled.
-1. Download [IBM Installation Manager Installation Kit V1.9](https://www.ibm.com/support/fixcentral/swg/downloadFixes?parent=ibm%7ERational&product=ibm/Rational/IBM+Installation+Manager&release=1.9.1.5&platform=Linux&function=fixId&fixids=1.9.1.5-IBMIM-LINUX-X86_64-20210309_1755&useReleaseAsTarget=true&includeRequisites=1&includeSupersedes=0&downloadMethod=http) after signing with your IBM id.
 1. Install [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest).
 1. Install [PowerShell Core](https://docs.microsoft.com/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7.1).
 1. Install [Maven](https://maven.apache.org/download.cgi).
@@ -26,7 +25,7 @@
 1. Using `deploy.azcli` to deploy
 
    ```bash
-   ./deploy.azcli -n <deploymentName> -f <installKitFile> -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation>
+   ./deploy.azcli -n <deploymentName> -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation>
    ```
 
 ## After deployment

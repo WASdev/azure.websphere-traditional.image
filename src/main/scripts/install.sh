@@ -14,11 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-while getopts "l:u:p:" opt; do
+while getopts "u:p:" opt; do
     case $opt in
-        l)
-            imKitLocation=$OPTARG #SAS URI of the IBM Installation Manager install kit in Azure Storage
-        ;;
         u)
             userName=$OPTARG #IBM user id for downloading artifacts from IBM web site
         ;;
@@ -55,7 +52,7 @@ source /datadrive/virtualimage.properties
 mkdir -p ${IM_INSTALL_DIRECTORY} && mkdir -p ${WAS_ND_INSTALL_DIRECTORY} && mkdir -p ${IM_SHARED_DIRECTORY}
 
 # Install IBM Installation Manager
-wget -O "$IM_INSTALL_KIT" "$imKitLocation" -q
+wget -O "$IM_INSTALL_KIT" "$IM_INSTALL_KIT_URL" -q
 mkdir im_installer
 unzip -q "$IM_INSTALL_KIT" -d im_installer
 ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
