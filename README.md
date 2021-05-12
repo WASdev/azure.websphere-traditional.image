@@ -33,7 +33,7 @@
 1. You can [capture the source VM to a custom image](https://docs.microsoft.com/azure/virtual-machines/linux/capture-image), which consists of RHEL 8_3, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0, so it can be reused to create VM instances based on it using the same subscription;
 1. Similar to creating a custom private image, you can also [create a Virtual Machine offer in Azure Marketplace](https://docs.microsoft.com/azure/marketplace/cloud-partner-portal/virtual-machine/cpp-virtual-machine-offer), which is globally public and accessible. You can see more information in the following section.
 
-### Creating Virtual Machine offer in Azure Marketplace
+### Creating Virtual Machine offer in Azure Marketplace manually
 
 1. Deploy an Azure VM provisioned with RHEL, WebSphere & JDK (e.g., RHEL 8_3, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0). Use different combinations of OS, WebSphere and JDK per your requirements. If you want to install WebSphere and JDK in a separate data disk, only provision the VM with RHEL. Manual deployment or using the tailored ARM template works.
    1. Use un-managed disks instead of managed disks for VM provision. By doing so, the VHDs attached to the VM are stored in the storage account, which can be accessed later during the certification process of publishing VM image into Azure Marketplace
@@ -54,6 +54,13 @@
    1. [How to create a virtual machine using your own image](https://docs.microsoft.com/azure/marketplace/azure-vm-create-using-own-image)
    1. [How to generate a SAS URI for a VM image](https://docs.microsoft.com/azure/marketplace/azure-vm-get-sas-uri)
 1. Once the VM offer created successfully in Azure Marketplace, try to deploy a virtual machine using this VM offer and export the ARM template, where you can find how to correctly reference the VM offer in the upstream ARM template.
+
+### Retrieve SAS urls of VHD files from pipeline outputs
+
+The pipeline automates the above steps, and outputs the SAS urls of VHD blobs to an internal Teams Channel. If you are not in the channel, please following these steps to find those urls.
+1. Under the repo, go to 'Actions', and click the latest passed workflow.
+1. On the left, click the job named 'build'.
+1. Scrow down and click the step named 'Generate SAS url', the urls are printed at the last line.
 
 ## Roadmap to MVP
 
