@@ -15,7 +15,7 @@ on:
 env:
   # Latest version is at https://github.com/Azure/azure-cli/releases
   azCliVersion: 2.6.0
-  # Commit hash from https://github.com/edburns/azure-javaee-iaas/commits/main
+  # Commit hash from https://github.com/Azure/azure-javaee-iaas/commits/main
   ref_javaee: 6addd99d8bc3f472e040f11c053a37e1ac370229
   # Commit hash from https://github.com/Azure/arm-ttk/commits/master
   ref_armttk: d97aa57d259e2fc8562e11501b1cf902265129d9
