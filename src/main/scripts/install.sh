@@ -36,9 +36,6 @@ done
 name=$(df -h | grep "/datadrive" | awk '{print $1;}' | grep -Po "(?<=\/dev\/).*")
 echo "UUID=$(blkid | grep -Po "(?<=\/dev\/${name}\: UUID=\")[^\"]*(?=\".*)")   /datadrive   xfs   defaults,nofail   1   2" >> /etc/fstab
 
-# Update applications installed on the system
-yum update -y
-
 # Move tWAS entitlement check and application patch script to /var/lib/cloud/scripts/per-instance
 mv was-check.sh /var/lib/cloud/scripts/per-instance
 
