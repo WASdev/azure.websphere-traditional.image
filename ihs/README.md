@@ -1,0 +1,1 @@
+# Deploy an Azure VM with RHEL 8_3, IBM HTTP Server ND Traditional V9.0.5 & IBM JDK 8.0 pre-installed
