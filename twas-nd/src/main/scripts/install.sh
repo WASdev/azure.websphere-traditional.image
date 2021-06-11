@@ -54,6 +54,22 @@ mkdir im_installer
 unzip -q "$IM_INSTALL_KIT" -d im_installer
 ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
+# Check whether IBMid is entitled or not
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
+    -userName "$userName" -userPassword "$password" -passportAdvantage
+if [ $? -eq 0 ]; then
+    output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
+    if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
+        echo "IBM account entitlement check succeed."
+    else
+        echo "IBM account entitlement check failed."
+        exit 1
+    fi
+else
+    echo "Cannot connect to Passport Advantage."
+    exit 1
+fi
+
 # Install IBM WebSphere Application Server Network Deployment V9 using IBM Instalation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
     -userName "$userName" -userPassword "$password" -passportAdvantage
