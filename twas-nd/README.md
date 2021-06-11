@@ -84,7 +84,7 @@ The pipeline automates the above steps, and outputs the SAS urls of VHD blobs to
 
    1. Validate that the ability to patch is sufficient as an entitlement check.
    
-1. Create Azure Marketplace Azure Application entry for tWAS cluster. [gh-8-marketplace-entry](https://github.com/WASdev/azure.websphere-traditional.image/issues/8)
+1. Create Azure Marketplace Azure Application entry for tWAS-ND cluster. [gh-8-marketplace-entry](https://github.com/WASdev/azure.websphere-traditional.image/issues/8)
 
    1. Initial creation.
 
