@@ -15,6 +15,7 @@
    1. Change to directory hosting the repo project & run `mvn clean install`
 1. Checkout [arm-ttk](https://github.com/Azure/arm-ttk) under the specified parent directory
 1. Checkout this repo under the same parent directory and change to directory hosting the repo project
+1. Change to sub-directory `twas-nd`
 1. Build the project by replacing all placeholder `${<place_holder>}` with valid values
 
    ```bash
