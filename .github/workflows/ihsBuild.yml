@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: twas-nd CICD
+name: ihs CICD
 
 # Controls when the action will run. 
 on:
@@ -9,7 +9,7 @@ on:
   # Allows you to run this workflow using GitHub APIs
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
-  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/twasBuild.yml/dispatches --data '{"ref": "master"}'
+  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/ihsBuild.yml/dispatches --data '{"ref": "master"}'
   repository_dispatch:
 
 env:
@@ -26,15 +26,17 @@ env:
   unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
   entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
-  vmName: was${{ github.run_id }}${{ github.run_number }}
+  vmName: ihs${{ github.run_id }}${{ github.run_number }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
   testResourceGroup: imageTest${{ github.run_id }}${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   location: eastus
-  # Installation directory, must be updated if virtualimage.properties/WAS_ND_INSTALL_DIRECTORY changed 
-  was_nd_install_directory: /datadrive/IBM/WebSphere/ND/V9
+  # Installation directory, must be updated if virtualimage.properties changed 
+  ihs_install_directory: /datadrive/IBM/WebSphere/IHS/V9
+  plugin_install_directory: /datadrive/IBM/WebSphere/Plugins/V9
+  wct_install_directory: /datadrive/IBM/WebSphere/Toolbox/V9
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -71,7 +73,7 @@ jobs:
       - name: Build and test
         run: |
           # Add -Dgit.tag=<your local branch> if you are not using master
-          mvn -Dgit.repo=${{ env.userName }} -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} -DvmName=${{ env.vmName }} -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=wsp -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk clean install --file ${{ env.offerName }}/twas-nd/pom.xml
+          mvn -Dgit.repo=${{ env.userName }} -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} -DvmName=${{ env.vmName }} -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=wsp -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk clean install --file ${{ env.offerName }}/ihs/pom.xml
       - uses: azure/login@v1
         id: azure-login
         with:
@@ -81,7 +83,7 @@ jobs:
           az group create -l ${{ env.location }} -n ${{ env.testResourceGroup }}
       - name: Run deployment script
         run: |
-          cd ${{ env.offerName }}/twas-nd/target/arm
+          cd ${{ env.offerName }}/ihs/target/arm
 
           #parameters JSON
           parametersJson=$( cat ./parameters.json | jq '.parameters' )
@@ -144,7 +146,7 @@ jobs:
       - name: Deploy VM using image with unentitled account
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          cd ${{ env.offerName }}/twas-nd/test
+          cd ${{ env.offerName }}/ihs/test
           az deployment group create --resource-group ${{ env.testResourceGroup }} \
               --name unentitled${{ github.run_id }}${{ github.run_number }} \
               --template-file ./mainTemplate.json \
@@ -167,10 +169,10 @@ jobs:
           do
             isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for was entitlement check started..."
+              echo "waiting for entitlement check started..."
               sleep 5
             else
-              echo "was entitlement check started..."
+              echo "entitlement check started..."
             fi
           done
 
@@ -183,7 +185,7 @@ jobs:
             if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]]; then
                 isDone=true
             else
-                echo "waiting for was entitlement check completed..."
+                echo "waiting for entitlement check completed..."
                 sleep 5
             fi
           done
@@ -195,7 +197,7 @@ jobs:
 
           # Check the installation path is not removed
           echo "Check the installation path is not removed"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ -d "${{ env.was_nd_install_directory }}" ]; then echo true; else echo false; fi')
+          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] || [ -d "${{ env.plugin_install_directory }}" ] || [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
           if [[ $pathExists = true ]]; then
             echo "IBM installations still exist"
             exit 1
@@ -204,7 +206,7 @@ jobs:
       - name: Deploy VM using image with entitled account
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          cd ${{ env.offerName }}/twas-nd/test
+          cd ${{ env.offerName }}/ihs/test
           az deployment group create --resource-group ${{ env.testResourceGroup }} \
               --name entitled${{ github.run_id }}${{ github.run_number }} \
               --template-file ./mainTemplate.json \
@@ -226,10 +228,10 @@ jobs:
           do
             isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for was entitlement check started..."
+              echo "waiting for entitlement check started..."
               sleep 5
             else
-              echo "was entitlement check started..."
+              echo "entitlement check started..."
             fi
           done
 
@@ -242,7 +244,7 @@ jobs:
             if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]]; then
                 isDone=true
             else
-                echo "waiting for was entitlement check completed..."
+                echo "waiting for entitlement check completed..."
                 sleep 5
             fi
           done
@@ -254,7 +256,7 @@ jobs:
           
           # Check the installation path is removed
           echo "Check the installation path is removed"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ -d "${{ env.was_nd_install_directory }}" ]; then echo true; else echo false; fi')
+          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] && [ -d "${{ env.plugin_install_directory }}" ] && [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
           if [[ $pathExists = false ]]; then
             echo "IBM installations do not exist"
             exit 1
@@ -342,7 +344,7 @@ jobs:
                 {
                 "@context":"http://schema.org/extensions",
                 "@type":"MessageCard",
-                "text":"Workflow of repo 'azure.websphere-traditional.image/twas-nd' failed, please take a look at: https://github.com/WASdev/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
+                "text":"Workflow of repo 'azure.websphere-traditional.image/ihs' failed, please take a look at: https://github.com/WASdev/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
                 }
             EOF
             else
@@ -355,7 +357,7 @@ jobs:
                 {
                 "@context":"http://schema.org/extensions",
                 "@type":"MessageCard",
-                "text":"Workflow of repo 'azure.websphere-traditional.image/twas-nd' succeeded, ${sasUrls}"
+                "text":"Workflow of repo 'azure.websphere-traditional.image/ihs' succeeded, ${sasUrls}"
                 }
             EOF
             fi
