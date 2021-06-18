@@ -1,2 +1,2 @@
-# [Deploy an Azure VM with RHEL 8_3, IBM HTTP Server ND Traditional V9.0.5 & IBM JDK 8.0 pre-installed](/ihs)
+# [Deploy an Azure VM with RHEL 8_3, IBM HTTP Server V9.0, Plugin, WCT & IBM JDK 8.0 pre-installed](/ihs)
 # [Deploy an Azure VM with RHEL 8_3, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0 pre-installed](/twas-nd)
