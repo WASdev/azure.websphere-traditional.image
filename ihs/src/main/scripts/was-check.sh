@@ -44,7 +44,7 @@ fi
 if [ ${entitled} = true ]; then
     # Update all packages for the entitled user
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll -repositories "$REPOSITORY_URL" \
-        -acceptLicense -log log_file -installFixes none -secureStorageFile storage_file -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress)
+        -acceptLicense -log log_file -installFixes recommended -secureStorageFile storage_file -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress)
     echo "$output" >> /var/log/cloud-init-was.log
     echo "Entitled" >> /var/log/cloud-init-was.log
 else

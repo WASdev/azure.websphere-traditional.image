@@ -30,7 +30,7 @@ output=$(df -h)
 while echo $output | grep -qv "/datadrive"
 do
     sleep 10
-    echo "Waiting for data disk partition & moute complete..."
+    echo "Waiting for data disk partition & mount complete..."
     output=$(df -h)
 done
 name=$(df -h | grep "/datadrive" | awk '{print $1;}' | grep -Po "(?<=\/dev\/).*")
@@ -75,20 +75,20 @@ fi
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
     -userName "$userName" -userPassword "$password" -passportAdvantage
 
-# Install IBM HTTP Server V9 using IBM Instalation Manager
+# Install IBM HTTP Server V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$IBM_HTTP_SERVER" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
     -installationDirectory ${IHS_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
-    -secureStorageFile storage_file -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
+    -secureStorageFile storage_file -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
-# Install Web Server Plug-ins V9 for IBM WebSphere Application Server using IBM Instalation Manager
+# Install Web Server Plug-ins V9 for IBM WebSphere Application Server using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WEBSPHERE_PLUGIN" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
     -installationDirectory ${PLUGIN_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
-    -secureStorageFile storage_file -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
+    -secureStorageFile storage_file -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
-# Install WebSphere Customization Toolbox V9 using IBM Instalation Manager
+# Install WebSphere Customization Toolbox V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WEBSPHERE_WCT" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
     -installationDirectory ${WCT_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
-    -secureStorageFile storage_file -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
+    -secureStorageFile storage_file -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
 # Remove temporary files
 rm -rf storage_file && rm -rf log_file
