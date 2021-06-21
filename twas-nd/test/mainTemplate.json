@@ -204,7 +204,7 @@
                     "computerName": "[variables('name_virtualMachine')]",
                     "adminUsername": "[parameters('vmAdminId')]",
                     "adminPassword": "[parameters('vmAdminPwd')]",
-                    "customData": "[base64(concat(parameters('ibmUserId'), ',', parameters('ibmUserPwd')))]"
+                    "customData": "[base64(concat(parameters('ibmUserId'), ' ', parameters('ibmUserPwd')))]"
                 },
                 "networkProfile": {
                     "networkInterfaces": [
