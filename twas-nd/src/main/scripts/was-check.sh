@@ -21,7 +21,7 @@ echo "Checking at + $(date)" > /var/log/cloud-init-was.log
 
 # Read custom data from ovf-env.xml
 customData=`xmllint --xpath "//*[local-name()='Environment']/*[local-name()='ProvisioningSection']/*[local-name()='LinuxProvisioningConfigurationSet']/*[local-name()='CustomData']/text()" /var/lib/waagent/ovf-env.xml`
-IFS=',' read -r -a ibmIdCredentials <<< "$(echo $customData | base64 -d)"
+read -r -a ibmIdCredentials <<< "$(echo $customData | base64 -d)"
 
 # Check whether IBMid is entitled or not
 entitled=false
