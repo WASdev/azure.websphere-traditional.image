@@ -16,35 +16,33 @@
 
 * Name
 
-  IBM WebSphere HTTP Server
+  IBM WebSphere Application Server Cluster
   
 * Search results summary
 
-  Provisions IBM HTTP Server
+  IBM WebSphere Application Server (Traditional) Network Deployment cluster on Virtual Machines
   
 * Short description
 
-  Hidden base image for provisioning an IBM WebSphere Application Server (Traditional) Network Deployment cluster including the Deployment Manager, Admin Console, and a specified number of Server Nodes.
+  Provisions an IBM WebSphere Application Server (Traditional) Network Deployment cluster on Azure Virtual Machines, including the Deployment Manager, Admin Console, and a specified number of Server Nodes.
   
 * Description
 
-  This is a hidden base image.
+This offer automatically provisions several Azure resources to quickly move to WebSphere (Traditional) Application Server on Azure Virtual Machines. The automatically provisioned resources include virtual network, storage, network security group, Java, Linux, and WebSphere. With minimal effort you can provision a fully functional, highly available WebSphere Network Deployment cluster including the Deployment Manager and any number of servers you need. This offer automatically provisions the latest Red Hat Enterprise Linux, IBM Java SDK 8, and WebSphere 9.0.5 to ensure your VM has the latest fixes.
 
-  Solution Overview
-  The IBM WebSphere product portfolio is a set of industry-leading runtimes powering some of the most mission critical enterprise applications across geographies and environments. The WebSphere portfolio includes WebSphere (Traditional) Application Server, WebSphere Liberty, and Open Liberty.
 
-  WebSphere products are key components in enabling enterprise Java workloads on Azure. The offers aim to cover a range of use cases from mission critical existing traditional workloads to cloud-native applications. The offers target Open Liberty on Azure Red Hat OpenShift (ARO), WebSphere Liberty on ARO, WebSphere Application Server on Virtual Machines, Open Liberty on the Azure Kubernetes Service (AKS), and WebSphere Liberty on AKS. All offers enable further customization of deployments such as integration with databases (Db2, Azure SQL, Azure PostgreSQL, Azure MySQL), Azure App Gateway, Azure Active Directory, and ELK.
+The Deployment Manager and all servers are started by default, which allows you to begin managing the cluster right away using the Admin Console. For complete instructions, please follow the official [WebSphere documentation](https://www.ibm.com/docs/was-nd/9.0.5).
 
-  If you want to provide feedback on these offers, stay-up-date on the roadmap, or work closely on your migration scenarios with the engineering team developing these offers, select the CONTACT ME button on the marketplace offer overview page. Program managers, architects, and engineers will reach out to you shortly to start collaboration. The opportunity to collaborate on a migration scenario is free while the offers are under active development.
+This offer is Bring-Your-Own-License. You will be required to enter your registered IBM ID prior to successfully deploying this offer and your IBM ID must have active WebSphere entitlements associated with it. If you find that provisioning fails due to lack of entitlements, please contact the primary or secondary contacts for your IBM Passport Advantage Site who should be able to grant you access. This offer also assumes you are properly licensed to run offers in Microsoft Azure.
 
-  The currently available offers are listed in the Useful Links section at the bottom of this page.
-  WebSphere Application Server on Virtual Machines
-  This offer automatically provisions several Azure resources to quickly move to WebSphere (Traditional) Application Server on Azure Virtual Machines. The automatically provisioned resources include virtual network, storage, network security group, Java, Linux, and WebSphere. With minimal effort you can provision a fully functional, highly available WebSphere Network Deployment cluster including the Deployment Manager and any number of Server Nodes you need. This offer supports a range of operating system, Java, and WebSphere versions.
+WebSphere Solutions Overview
+The IBM WebSphere product portfolio is a set of industry-leading runtimes powering some of the most mission critical enterprise applications across geographies and environments. The WebSphere portfolio includes WebSphere (Traditional) Application Server, WebSphere Liberty, and Open Liberty.
 
-  The Domain Manager and all Server Nodes are started by default, which allows you to begin managing the cluster right away using the Admin Console. For complete instructions, please follow the official WebSphere documentation.
+WebSphere products are key components in enabling enterprise Java workloads on Azure. IBM and Microsoft are working on a set of jointly developed and supported solutions for the product family. Potential offers include Open Liberty on Azure Red Hat OpenShift (ARO), WebSphere Liberty on ARO, WebSphere Application Server (traditional) on Virtual Machines, Open Liberty on the Azure Kubernetes Service (AKS), and WebSphere Liberty on AKS.
 
-  This offer is Bring-Your-Own-License. It assumes you have already procured the appropriate licenses with IBM and are properly licensed to run offers in Microsoft Azure. You will be required to enter your registered IBM ID prior to successfully deploying this offer.
+If you want to provide feedback on these offers, stay updated on the roadmap, or work closely on your migration scenarios with the engineering team developing these offers, select the CONTACT ME button on the marketplace offer [overview page](https://aka.ms/websphere-on-azure). The opportunity to collaborate on a migration scenario is free while the offers are under active development.
 
+The currently available offers are listed in the Learn More section at the bottom of the [overview page](https://aka.ms/websphere-on-azure).
 * Privacy policy link
 
   https://www.ibm.com/privacy/us/en/
@@ -81,15 +79,15 @@
 
   * Plan name
 
-    2021-06-03-ihs-base-image
+    cluster
 
   * Plan summary
 
-    2021-06-03-ihs-base-image
+    Provisions an IBM WebSphere Application Server (Traditional) Network Deployment cluster
 
   * Plan description
 
-    2021-06-03-ihs-base-image 
+    Provisions an IBM WebSphere Application Server (Traditional) Network Deployment cluster including the Deployment Manager, Admin Console, and a specified number of Server Nodes.
   
 * Pricing and availibility
 
