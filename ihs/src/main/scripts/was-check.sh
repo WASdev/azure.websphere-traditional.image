@@ -24,31 +24,31 @@ customData=`xmllint --xpath "//*[local-name()='Environment']/*[local-name()='Pro
 read -r -a ibmIdCredentials <<< "$(echo $customData | base64 -d)"
 
 # Check whether IBMid is entitled or not
-entitled=false
+result=Unentitled
 if [ ${#ibmIdCredentials[@]} -eq 2 ]; then
     userName=${ibmIdCredentials[0]}
     password=${ibmIdCredentials[1]}
     
     ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
         -userName "$userName" -userPassword "$password" -passportAdvantage
-    if [ $? -eq 0 ]; then
-        output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
-        echo $output | grep -q "$WAS_ND_VERSION_ENTITLED" && entitled=true
-    else
-        echo "Cannot connect to Passport Advantage." >> /var/log/cloud-init-was.log
+    if [ $? -ne 0 ]; then
+        echo "Cannot connect to Passport Advantage while saving the credential to the secure storage file." >> /var/log/cloud-init-was.log
     fi
+    
+    output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
+    echo $output | grep -q "$WAS_ND_VERSION_ENTITLED" && result=Entitled
+    echo $output | grep -q "$NO_PACKAGES_FOUND" && result=Undefined
 else
     echo "Invalid input format." >> /var/log/cloud-init-was.log
 fi
 
-if [ ${entitled} = true ]; then
+if [ ${result} = Entitled ]; then
     # Update all packages for the entitled user
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll -repositories "$REPOSITORY_URL" \
         -acceptLicense -log log_file -installFixes recommended -secureStorageFile storage_file -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress)
     echo "$output" >> /var/log/cloud-init-was.log
-    echo "Entitled" >> /var/log/cloud-init-was.log
 else
-    # Remove installations for the un-entitled user
+    # Remove installations for the un-entitled or undefined user
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl uninstall "$IBM_HTTP_SERVER" "$IBM_JAVA_SDK" -installationDirectory ${IHS_INSTALL_DIRECTORY})
     echo "$output" >> /var/log/cloud-init-was.log
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl uninstall "$WEBSPHERE_PLUGIN" "$IBM_JAVA_SDK" -installationDirectory ${PLUGIN_INSTALL_DIRECTORY})
@@ -56,8 +56,8 @@ else
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl uninstall "$WEBSPHERE_WCT" "$IBM_JAVA_SDK" -installationDirectory ${WCT_INSTALL_DIRECTORY})
     echo "$output" >> /var/log/cloud-init-was.log
     rm -rf /datadrive/IBM && rm -rf /datadrive/virtualimage.properties
-    echo "Unentitled" >> /var/log/cloud-init-was.log
 fi
+echo ${result} >> /var/log/cloud-init-was.log
 
 # Scrub the custom data from files which contain sensitive information
 if grep -q "CustomData" /var/lib/waagent/ovf-env.xml; then
