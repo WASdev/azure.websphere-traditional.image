@@ -54,25 +54,31 @@ mkdir im_installer
 unzip -q "$IM_INSTALL_KIT" -d im_installer
 ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
-# Check whether IBMid is entitled or not
+# Save credentials to a secure storage file
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
     -userName "$userName" -userPassword "$password" -passportAdvantage
+
+# Check whether IBMid is entitled or not
 if [ $? -eq 0 ]; then
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
     if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
         echo "IBM account entitlement check succeed."
+    elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
+        echo "IBM account entitlement check is not available."
+        rm -rf storage_file && rm -rf log_file
+        exit 1
     else
         echo "IBM account entitlement check failed."
+        rm -rf storage_file && rm -rf log_file
         exit 1
     fi
 else
     echo "Cannot connect to Passport Advantage."
+    rm -rf storage_file && rm -rf log_file
     exit 1
 fi
 
 # Install IBM WebSphere Application Server Network Deployment V9 using IBM Instalation Manager
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
-    -userName "$userName" -userPassword "$password" -passportAdvantage
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_ND_TRADITIONAL" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
     -installationDirectory ${WAS_ND_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -secureStorageFile storage_file -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress

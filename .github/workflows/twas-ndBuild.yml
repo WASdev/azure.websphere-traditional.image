@@ -9,7 +9,7 @@ on:
   # Allows you to run this workflow using GitHub APIs
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
-  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/twasBuild.yml/dispatches --data '{"ref": "master"}'
+  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/twas-ndBuild.yml/dispatches --data '{"ref": "master"}'
   repository_dispatch:
 
 env:
@@ -115,6 +115,14 @@ jobs:
       - name: Create environment variable for VM
         id: env-vm-ip
         run: echo "wlsPublicIP=${{steps.query-vm-ip.outputs.publicIP}}" >> $GITHUB_ENV
+      - name: Install cifs-utils
+        run: |
+          echo "pubilc IP of VM: ${wlsPublicIP}"
+          echo "yum update starts"
+          echo install sshpass
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo  -S yum install cifs-utils -y'
       - name: Update applications
         run: |
           echo "pubilc IP of VM: ${wlsPublicIP}"
@@ -180,7 +188,7 @@ jobs:
             result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
             # Remove special characters
             result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
-            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]]; then
+            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]]; then
                 isDone=true
             else
                 echo "waiting for was entitlement check completed..."
@@ -239,7 +247,7 @@ jobs:
             result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
             # Remove special characters
             result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
-            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]]; then
+            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]]; then
                 isDone=true
             else
                 echo "waiting for was entitlement check completed..."
@@ -248,7 +256,7 @@ jobs:
           done
           echo $result
 
-          if [ ${result} = Unentitled ]; then
+          if [ ${result} != Entitled ]; then
               exit 1
           fi
           
