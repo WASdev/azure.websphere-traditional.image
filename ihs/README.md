@@ -1,4 +1,4 @@
-# Deploy an Azure VM with RHEL 8_3, IBM HTTP Server V9.0, Plugin, WCT & IBM JDK 8.0 pre-installed
+# Deploy an Azure VM with RHEL 8.3, IBM HTTP Server V9.0, Plugin, WCT & IBM JDK 8.0 pre-installed
 
 ## Prerequisites
 
@@ -31,12 +31,12 @@
 
 ## After deployment
 
-1. You can [capture the source VM to a custom image](https://docs.microsoft.com/azure/virtual-machines/linux/capture-image), which consists of RHEL 8_3, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0, so it can be reused to create VM instances based on it using the same subscription;
+1. You can [capture the source VM to a custom image](https://docs.microsoft.com/azure/virtual-machines/linux/capture-image), which consists of RHEL 8.3, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0, so it can be reused to create VM instances based on it using the same subscription;
 1. Similar to creating a custom private image, you can also [create a Virtual Machine offer in Azure Marketplace](https://docs.microsoft.com/azure/marketplace/cloud-partner-portal/virtual-machine/cpp-virtual-machine-offer), which is globally public and accessible. You can see more information in the following section.
 
 ### Creating Virtual Machine offer in Azure Marketplace manually
 
-1. Deploy an Azure VM provisioned with RHEL, IHS & JDK (RHEL 8_3, IBM HTTP Server V9.0, Plugin, WCT & IBM JDK 8.0) by following [Steps of deployment](#steps-of-deployment)
+1. Deploy an Azure VM provisioned with RHEL, IHS & JDK (RHEL 8.3, IBM HTTP Server V9.0, Plugin, WCT & IBM JDK 8.0) by following [Steps of deployment](#steps-of-deployment)
 1. [Generate VM image](https://docs.microsoft.com/azure/virtual-machines/linux/capture-image):
    1. SSH into the provisioned VM
       1. Update applications installed on the system: `sudo yum update -y`
