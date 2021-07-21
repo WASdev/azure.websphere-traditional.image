@@ -269,32 +269,6 @@ jobs:
             echo "IBM installations do not exist"
             exit 1
           fi
-
-      - name: Delete all resources but vhd storage account in the test resource group
-        id: delete-resources-in-group
-        if: always()
-        uses: azure/CLI@v1
-        with:
-          azcliversion: ${{ env.azCliVersion }}
-          inlineScript: |
-            # Disks have to be deleted after the VM is deleted
-            unentitledOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name unentitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
-            echo "unentitledOsDiskId: ${unentitledOsDiskId}"
-
-            unentitledDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name unentitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
-            echo "unentitledDataDiskIds: ${unentitledDataDiskIds}"
-
-            entitledOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name entitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
-            echo "unentitledOsDiskId: ${unentitledOsDiskId}"
-
-            entitledDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name entitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
-            echo "unentitledDataDiskIds: ${unentitledDataDiskIds}"
-
-            resourcesToDelete=$(az resource list --query "[?name!='${{ env.vhdStorageAccountName }}']" --resource-group ${{ env.testResourceGroup }} | jq -r 'map(.id) | join(" ")')
-            echo $resourcesToDelete
-
-            az resource delete --verbose --ids $resourcesToDelete
-            az disk delete --yes --resource-group ${{ env.testResourceGroup }} --ids ${unentitledOsDiskId} ${unentitledDataDiskIds} ${entitledOsDiskId} ${entitledDataDiskIds}
       - name: Generate SAS url
         id: generate-sas-blob-url
         run: |
@@ -328,6 +302,36 @@ jobs:
         with:
           name: sasurl
           path: sas-url.txt
+
+      - name: Delete all resources but vhd storage account in the test resource group
+        id: delete-resources-in-group
+        if: always()
+        uses: azure/CLI@v1
+        with:
+          azcliversion: ${{ env.azCliVersion }}
+          inlineScript: |
+            # Disks have to be deleted after the VM is deleted
+            unentitledOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name unentitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
+            echo "unentitledOsDiskId: ${unentitledOsDiskId}"
+
+            unentitledDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name unentitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
+            echo "unentitledDataDiskIds: ${unentitledDataDiskIds}"
+
+            entitledOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name entitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
+            echo "unentitledOsDiskId: ${unentitledOsDiskId}"
+
+            entitledDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name entitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
+            echo "unentitledDataDiskIds: ${unentitledDataDiskIds}"
+
+            vmForImage=$(az vm list --resource-group ${{ env.testResourceGroup }} --query "[?name=='${{ env.vmName }}']" | jq -r 'map(.id) | join(" ")')
+            echo $vmForImage
+
+            resourcesToDelete=$(az resource list --query "[?name!='${{ env.vhdStorageAccountName }}']" --resource-group ${{ env.testResourceGroup }} | jq -r 'map(.id) | join(" ")')
+            echo $resourcesToDelete
+
+            az vm delete --verbose --ids $vmForImage --yes
+            az resource delete --verbose --ids $resourcesToDelete
+            az disk delete --yes --resource-group ${{ env.testResourceGroup }} --ids ${unentitledOsDiskId} ${unentitledDataDiskIds} ${entitledOsDiskId} ${entitledDataDiskIds}
   summary:
     needs: build
     if: always()
