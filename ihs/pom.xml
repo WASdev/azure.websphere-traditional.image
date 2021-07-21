@@ -34,7 +34,7 @@
 
     <properties>
         <git.proj>azure.websphere-traditional.image</git.proj>
-        <azure.apiVersion>2020-06-01</azure.apiVersion>
-        <azure.apiVersion2>2019-06-01</azure.apiVersion2>
+        <git.repo>WASdev</git.repo>
+        <template.pid.properties.url>${artifactsLocationBase}/${git.proj}/${git.tag}/config.properties</template.pid.properties.url>
     </properties>
 </project>
