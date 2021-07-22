@@ -34,6 +34,11 @@
 
     <properties>
         <git.repo>WASdev</git.repo>
+        <!-- 
+            The default value for `git.tag` is defined in parent pom "azure-javaee-iaas-parent", which is `master`.
+            It can also be overridden with `-Dgit.tag` at the maven command line if you use a different git branch.
+            See https://github.com/Azure/azure-javaee-iaas/blob/main/arm-parent/pom.xml#L22-L24 for more available properties.
+         -->
         <template.pid.properties.url>${artifactsLocationBase}/${project.artifactId}/${git.tag}/config.properties</template.pid.properties.url>
     </properties>
 </project>
