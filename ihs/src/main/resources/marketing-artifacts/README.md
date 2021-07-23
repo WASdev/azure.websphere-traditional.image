@@ -109,7 +109,7 @@
       
    * OS friendly name
    
-      RHEL_8_3
+      RHEL_8_4
       
 * Recommended VM sizes
 

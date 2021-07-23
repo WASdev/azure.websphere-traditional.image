@@ -119,7 +119,7 @@ The currently available offers are listed in the Learn More section at the botto
       
    * OS friendly name
    
-      RHEL_8_3
+      RHEL_8_4
       
 * Recommended VM sizes
 

@@ -223,10 +223,10 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
                 },
                 "storageProfile": {
                     "imageReference": {
-                        "publisher": "RedHat",
-                        "offer": "RHEL",
-                        "sku": "8_3",
-                        "version": "latest"
+                        "publisher": "${image.publisher}",
+                        "offer": "${image.offer}",
+                        "sku": "${image.sku}",
+                        "version": "${image.version}"
                     },
                     "osDisk": {
                         "name": "[concat(variables('name_virtualMachine'), '-disk')]",
