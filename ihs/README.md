@@ -22,7 +22,7 @@
    mvn -Dgit.repo=<repo_user> -Dgit.tag=<repo_tag> -DibmUserId=<entitledIBMid> -DibmUserPwd=<entitledIBMidPwd> -DvmAdminId=<vmAdminId> -DvmAdminPwd=<vmAdminPwd> -DdnsLabelPrefix=<dnsLabelPrefix> -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk clean install
    ```
 
-1. Change to `./target/arm` directory
+1. Change to `./target/cli` directory
 1. Using `deploy.azcli` to deploy
 
    ```bash
