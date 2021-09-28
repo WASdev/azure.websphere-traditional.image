@@ -16,7 +16,7 @@ env:
   # Latest version is at https://github.com/Azure/azure-cli/releases
   azCliVersion: 2.23.0
   # Commit hash from https://github.com/Azure/azure-javaee-iaas/commits/main
-  ref_javaee: 6addd99d8bc3f472e040f11c053a37e1ac370229
+  ref_javaee: 85d5d10dd045a90452ae01cad20b258ce853ec18
   # Commit hash from https://github.com/Azure/arm-ttk/commits/master
   ref_armttk: d97aa57d259e2fc8562e11501b1cf902265129d9
   offerName: azure.websphere-traditional.image
