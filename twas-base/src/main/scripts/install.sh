@@ -52,6 +52,7 @@ mkdir -p ${IM_INSTALL_DIRECTORY} && mkdir -p ${WAS_BASE_INSTALL_DIRECTORY} && mk
 wget -O "$IM_INSTALL_KIT" "$IM_INSTALL_KIT_URL" -q
 mkdir im_installer
 unzip -q "$IM_INSTALL_KIT" -d im_installer
+chmod -R 755 ./im_installer/*
 ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
 # Save credentials to a secure storage file
