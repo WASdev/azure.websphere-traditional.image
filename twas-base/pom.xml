@@ -25,7 +25,7 @@
     <parent>
         <groupId>com.microsoft.azure.iaas</groupId>
         <artifactId>azure-javaee-iaas-parent</artifactId>
-        <version>1.0.11</version>
+        <version>1.0.13</version>
         <relativePath></relativePath>
     </parent>
     
@@ -33,13 +33,13 @@
     <name>${project.artifactId}</name>
 
     <properties>
-        <git.proj>azure.websphere-traditional.image</git.proj>
         <git.repo>WASdev</git.repo>
         <!-- 
-            The default value for `git.tag` is defined in parent pom "azure-javaee-iaas-parent", which is `master`.
+            The default value for `git.tag` is defined in parent pom "azure-javaee-iaas-parent", which is `main`.
             It can also be overridden with `-Dgit.tag` at the maven command line if you use a different git branch.
             See https://github.com/Azure/azure-javaee-iaas/blob/main/arm-parent/pom.xml#L22-L24 for more available properties.
          -->
-        <template.pid.properties.url>${artifactsLocationBase}/${git.proj}/${git.tag}/config.properties</template.pid.properties.url>
+        <artifactsLocationBase>https://raw.githubusercontent.com/${git.repo}/azure.websphere-traditional.image/${git.tag}</artifactsLocationBase>
+        <template.pid.properties.url>${artifactsLocationBase}/config.properties</template.pid.properties.url>
     </properties>
 </project>
