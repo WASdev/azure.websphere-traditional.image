@@ -36,7 +36,7 @@ if [ ${#ibmIdCredentials[@]} -eq 2 ]; then
     fi
     
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
-    echo $output | grep -q "$WAS_ND_VERSION_ENTITLED" && result=$ENTITLED
+    echo $output | grep -q "$WAS_BASE_VERSION_ENTITLED" && result=$ENTITLED
     echo $output | grep -q "$NO_PACKAGES_FOUND" && result=$UNDEFINED
 else
     echo "Invalid input format." >> $WAS_LOG_PATH

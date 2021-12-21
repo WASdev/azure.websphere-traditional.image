@@ -62,7 +62,7 @@ ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile
 # Check whether IBMid is entitled or not
 if [ $? -eq 0 ]; then
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
-    if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
+    if echo "$output" | grep "$WAS_BASE_VERSION_ENTITLED"; then
         echo "IBM account entitlement check succeed."
     elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
         echo "IBM account entitlement check is not available."
