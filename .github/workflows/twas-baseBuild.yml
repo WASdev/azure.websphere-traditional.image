@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: ihs CICD
+name: twas-base CICD
 
 # Controls when the action will run. 
 on:
@@ -9,20 +9,20 @@ on:
   # Allows you to run this workflow using GitHub APIs
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
-  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/ihsBuild.yml/dispatches --data '{"ref": "main"}'
+  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/twas-baseBuild.yml/dispatches --data '{"ref": "main"}'
   repository_dispatch:
-    types: [integration-test-ihs, integration-test-all]
+    types: [integration-test-twasbase, integration-test-all]
   # sample request
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
-  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-ihs"}'
+  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-twasbase"}'
   # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-all"}'
 
 env:
   # Latest version is at https://github.com/Azure/azure-cli/releases
   azCliVersion: 2.31.0
   # Commit hash from https://github.com/Azure/azure-javaee-iaas/commits/main
-  ref_javaee: 85d5d10dd045a90452ae01cad20b258ce853ec18
+  ref_javaee: 13fe6ec487024eb61355d661ab5700ae90cb0a8f
   # Commit hash from https://github.com/Azure/arm-ttk/commits/master
   ref_armttk: d97aa57d259e2fc8562e11501b1cf902265129d9
   offerName: azure.websphere-traditional.image
@@ -32,17 +32,15 @@ env:
   unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
   entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
-  vmName: ihs${{ github.run_id }}${{ github.run_number }}
+  vmName: twasbase${{ github.run_id }}${{ github.run_number }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
   testResourceGroup: imageTest${{ github.run_id }}${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   location: eastus
-  # Installation directory, must be updated if virtualimage.properties changed 
-  ihs_install_directory: /datadrive/IBM/WebSphere/IHS/V9
-  plugin_install_directory: /datadrive/IBM/WebSphere/Plugins/V9
-  wct_install_directory: /datadrive/IBM/WebSphere/Toolbox/V9
+  # Installation directory, must be updated if virtualimage.properties/WAS_BASE_INSTALL_DIRECTORY changed 
+  was_base_install_directory: /datadrive/IBM/WebSphere/Base/V9
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -58,7 +56,7 @@ jobs:
         with:
           repository: Azure/azure-javaee-iaas
           path: azure-javaee-iaas
-          ref: ${{ env.ref_javaee }}  
+          ref: ${{ env.ref_javaee }}
 
       - name: Checkout arm-ttk
         uses: actions/checkout@v2
@@ -79,7 +77,7 @@ jobs:
       - name: Build and test
         run: |
           # Add -Dgit.tag=<your local branch> if you are not using main
-          mvn -Dgit.repo=${{ env.userName }} -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} -DvmName=${{ env.vmName }} -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=wsp -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk clean install --file ${{ env.offerName }}/ihs/pom.xml
+          mvn -Dgit.repo=${{ env.userName }} -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=wsp -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk clean install --file ${{ env.offerName }}/twas-base/pom.xml
       - uses: azure/login@v1
         id: azure-login
         with:
@@ -89,14 +87,12 @@ jobs:
           az group create -l ${{ env.location }} -n ${{ env.testResourceGroup }}
       - name: Run deployment script
         run: |
-          cd ${{ env.offerName }}/ihs/target/arm
+          cd ${{ env.offerName }}/twas-base/target/arm
 
           #parameters JSON
           parametersJson=$( cat ./parameters.json | jq '.parameters' )
           parametersJson=$( echo "$parametersJson" | jq --arg storageAccount "${{ env.vhdStorageAccountName }}" '{"storageAccount": {"value":$storageAccount}} + .' )
           parametersJson=$( echo "$parametersJson" | jq --arg vmName "${{ env.vmName }}" '{"vmName": {"value":$vmName}} + .' )
-
-          echo $parametersJson
 
           #Start deployment
           echo "Starting deployment..."
@@ -130,7 +126,7 @@ jobs:
           echo install sshpass
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum install cifs-utils -y'
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo  -S yum install cifs-utils -y'
       - name: Update applications
         run: |
           echo "pubilc IP of VM: ${wlsPublicIP}"
@@ -160,7 +156,7 @@ jobs:
       - name: Deploy VM using image with unentitled account
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          cd ${{ env.offerName }}/ihs/test
+          cd ${{ env.offerName }}/twas-base/test
           az deployment group create --resource-group ${{ env.testResourceGroup }} \
               --name unentitled${{ github.run_id }}${{ github.run_number }} \
               --template-file ./mainTemplate.json \
@@ -183,10 +179,10 @@ jobs:
           do
             isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for entitlement check started..."
+              echo "waiting for was entitlement check started..."
               sleep 5
             else
-              echo "entitlement check started..."
+              echo "was entitlement check started..."
             fi
           done
 
@@ -199,7 +195,7 @@ jobs:
             if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]]; then
                 isDone=true
             else
-                echo "waiting for entitlement check completed..."
+                echo "waiting for was entitlement check completed..."
                 sleep 5
             fi
           done
@@ -211,7 +207,7 @@ jobs:
 
           # Check the installation path is not removed
           echo "Check the installation path is not removed"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] || [ -d "${{ env.plugin_install_directory }}" ] || [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
+          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ -d "${{ env.was_base_install_directory }}" ]; then echo true; else echo false; fi')
           if [[ $pathExists = true ]]; then
             echo "IBM installations still exist"
             exit 1
@@ -220,7 +216,7 @@ jobs:
       - name: Deploy VM using image with entitled account
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          cd ${{ env.offerName }}/ihs/test
+          cd ${{ env.offerName }}/twas-base/test
           az deployment group create --resource-group ${{ env.testResourceGroup }} \
               --name entitled${{ github.run_id }}${{ github.run_number }} \
               --template-file ./mainTemplate.json \
@@ -242,10 +238,10 @@ jobs:
           do
             isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for entitlement check started..."
+              echo "waiting for was entitlement check started..."
               sleep 5
             else
-              echo "entitlement check started..."
+              echo "was entitlement check started..."
             fi
           done
 
@@ -258,7 +254,7 @@ jobs:
             if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]]; then
                 isDone=true
             else
-                echo "waiting for entitlement check completed..."
+                echo "waiting for was entitlement check completed..."
                 sleep 5
             fi
           done
@@ -270,7 +266,7 @@ jobs:
           
           # Check the installation path is removed
           echo "Check the installation path is removed"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] && [ -d "${{ env.plugin_install_directory }}" ] && [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
+          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ -d "${{ env.was_base_install_directory }}" ]; then echo true; else echo false; fi')
           if [[ $pathExists = false ]]; then
             echo "IBM installations do not exist"
             exit 1
@@ -362,7 +358,7 @@ jobs:
                 {
                 "@context":"http://schema.org/extensions",
                 "@type":"MessageCard",
-                "text":"Workflow of repo 'azure.websphere-traditional.image/ihs' failed, please take a look at: https://github.com/WASdev/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
+                "text":"Workflow of repo 'azure.websphere-traditional.image/twas-base' failed, please take a look at: https://github.com/WASdev/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
                 }
             EOF
             else
@@ -375,7 +371,7 @@ jobs:
                 {
                 "@context":"http://schema.org/extensions",
                 "@type":"MessageCard",
-                "text":"Workflow of repo 'azure.websphere-traditional.image/ihs' succeeded, ${sasUrls}"
+                "text":"Workflow of repo 'azure.websphere-traditional.image/twas-base' succeeded, ${sasUrls}"
                 }
             EOF
             fi

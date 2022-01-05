@@ -1,0 +1,205 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "dnsLabelPrefix": {
+            "defaultValue": "wsp",
+            "type": "string"
+        },
+        "ibmUserId": {
+            "defaultValue": "",
+            "type": "string"
+        },
+        "ibmUserPwd": {
+            "defaultValue": "",
+            "type": "securestring"
+        },
+        "imageResourceId": {
+            "defaultValue": "",
+            "type": "string"
+        },
+        "vmSize": {
+            "defaultValue": "Standard_D2_v3",
+            "type": "string"
+        },
+        "vmName": {
+            "type": "string"
+        },
+        "addressPrefix": {
+            "defaultValue": "10.0.0.0/16",
+            "type": "string"
+        },
+        "subnetName": {
+            "defaultValue": "subnet01",
+            "type": "string"
+        },
+        "subnetAddressPrefix": {
+            "defaultValue": "10.0.1.0/24",
+            "type": "string"
+        },
+        "vmAdminId": {
+            "type": "string"
+        },
+        "vmAdminPwd": {
+            "type": "securestring"
+        },
+        "guidValue": {
+            "defaultValue": "[newGuid()]",
+            "type": "string"
+        }
+    },
+    "variables": {
+        "const_dnsLabelPrefix": "[concat(parameters('dnsLabelPrefix'), take(replace(parameters('guidValue'),'-',''),6))]",
+        "name_networkInterface": "[concat(variables('name_virtualMachine'), '-if')]",
+        "name_networkSecurityGroup": "[concat(variables('const_dnsLabelPrefix'), '-nsg')]",
+        "name_publicIPAddress": "[concat(variables('name_virtualMachine'), '-ip')]",
+        "name_virtualMachine": "[parameters('vmName')]",
+        "name_virtualNetwork": "[concat(variables('const_dnsLabelPrefix'), '-vnet')]",
+        "ref_networkInterface": "[resourceId('Microsoft.Network/networkInterfaces', variables('name_networkInterface'))]",
+        "ref_networkSecurityGroup": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('name_networkSecurityGroup'))]",
+        "ref_publicIPAddress": "[resourceId('Microsoft.Network/publicIPAddresses', variables('name_publicIPAddress'))]",
+        "ref_subnet": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('name_virtualNetwork'), parameters('subnetName'))]",
+        "ref_virtualNetwork": "[resourceId('Microsoft.Network/virtualNetworks', variables('name_virtualNetwork'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('name_networkSecurityGroup')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "TCP",
+                        "properties": {
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 320,
+                            "direction": "Inbound",
+                            "destinationPortRanges": [
+                                "22",
+                                "9043",
+                                "9060",
+                                "9080",
+                                "9443"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('name_virtualNetwork')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[variables('ref_networkSecurityGroup')]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('addressPrefix')]"
+                    ]
+                },
+                "enableDdosProtection": false,
+                "enableVmProtection": false
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(variables('name_virtualNetwork'), '/', parameters('subnetName'))]",
+            "dependsOn": [
+                "[variables('ref_virtualNetwork')]",
+                "[variables('ref_networkSecurityGroup')]"
+            ],
+            "properties": {
+                "addressPrefix": "[parameters('subnetAddressPrefix')]",
+                "networkSecurityGroup": {
+                    "id": "[variables('ref_networkSecurityGroup')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('name_publicIPAddress')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('const_dnsLabelPrefix')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('name_networkInterface')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[variables('ref_publicIPAddress')]",
+                "[variables('ref_subnet')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[variables('ref_publicIPAddress')]"
+                            },
+                            "subnet": {
+                                "id": "[variables('ref_subnet')]"
+                            }
+                        }
+                    }
+                ],
+                "enableAcceleratedNetworking": false,
+                "enableIPForwarding": false,
+                "primary": true
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('name_virtualMachine')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[variables('ref_networkInterface')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "id": "[parameters('imageResourceId')]"
+                    }
+                },
+                "osProfile": {
+                    "computerName": "[variables('name_virtualMachine')]",
+                    "adminUsername": "[parameters('vmAdminId')]",
+                    "adminPassword": "[parameters('vmAdminPwd')]",
+                    "customData": "[base64(concat(parameters('ibmUserId'), ' ', parameters('ibmUserPwd')))]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[variables('ref_networkInterface')]"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

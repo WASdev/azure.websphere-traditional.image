@@ -11,11 +11,12 @@ on:
   # REPO_NAME=WASdev/azure.websphere-traditional.image
   # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/twas-ndBuild.yml/dispatches --data '{"ref": "main"}'
   repository_dispatch:
-    types: [twas-integration-test]
+    types: [integration-test-twasnd, integration-test-all]
   # sample request
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
-  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "twas-integration-test"}'
+  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-twasnd"}'
+  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-all"}'
 
 env:
   # Latest version is at https://github.com/Azure/azure-cli/releases
@@ -31,7 +32,7 @@ env:
   unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
   entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
-  vmName: was${{ github.run_id }}${{ github.run_number }}
+  vmName: twasnd${{ github.run_id }}${{ github.run_number }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
   testResourceGroup: imageTest${{ github.run_id }}${{ github.run_number }}
