@@ -183,10 +183,10 @@ jobs:
           do
             isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for entitlement check started..."
+              echo "waiting for entitlement/evaluation check started..."
               sleep 5
             else
-              echo "entitlement check started..."
+              echo "entitlement/evaluation check started..."
             fi
           done
 
@@ -196,10 +196,10 @@ jobs:
             result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
             # Remove special characters
             result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
-            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]]; then
+            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
                 isDone=true
             else
-                echo "waiting for entitlement check completed..."
+                echo "waiting for entitlement/evaluation check completed..."
                 sleep 5
             fi
           done
@@ -242,10 +242,10 @@ jobs:
           do
             isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for entitlement check started..."
+              echo "waiting for entitlement/evaluation check started..."
               sleep 5
             else
-              echo "entitlement check started..."
+              echo "entitlement/evaluation check started..."
             fi
           done
 
@@ -255,10 +255,10 @@ jobs:
             result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
             # Remove special characters
             result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
-            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]]; then
+            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
                 isDone=true
             else
-                echo "waiting for entitlement check completed..."
+                echo "waiting for entitlement/evaluation check completed..."
                 sleep 5
             fi
           done
@@ -271,6 +271,64 @@ jobs:
           # Check the installation path is removed
           echo "Check the installation path is removed"
           pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] && [ -d "${{ env.plugin_install_directory }}" ] && [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
+          if [[ $pathExists = false ]]; then
+            echo "IBM installations do not exist"
+            exit 1
+          fi
+      - name: Deploy VM using image for evaluation usage
+        run: |
+          imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
+          cd ${{ env.offerName }}/ihs/test
+          az deployment group create --resource-group ${{ env.testResourceGroup }} \
+              --name evaluation${{ github.run_id }}${{ github.run_number }} \
+              --template-file ./mainTemplate.json \
+              --parameters ibmUserId="" ibmUserPwd="" vmName=evaluation${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
+      - name: Verify the IBM installations for evaluation usage
+        run: |
+          echo "query public ip"
+          evaluationVMIP=$(az vm show \
+            --resource-group ${{ env.testResourceGroup }} \
+            --name evaluation${{ github.run_id }}${{ github.run_number }} -d \
+            --query publicIps -o tsv)
+          echo "pubilc IP of VM: ${evaluationVMIP}"
+          echo "Verifying WebSphere server installation"
+          echo install sshpass
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${evaluationVMIP} 22
+          isCloudInitReady=false
+          while [ $isCloudInitReady = false ]
+          do
+            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
+            if [[ $isCloudInitReady = false ]]; then
+              echo "waiting for entitlement/evaluation check started..."
+              sleep 5
+            else
+              echo "entitlement/evaluation check started..."
+            fi
+          done
+
+          isDone=false
+          while [ $isDone = false ]
+          do
+            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} '(tail -n1) </var/log/cloud-init-was.log')
+            # Remove special characters
+            result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
+            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
+                isDone=true
+            else
+                echo "waiting for entitlement/evaluation check completed..."
+                sleep 5
+            fi
+          done
+          echo $result
+
+          if [ ${result} != Evaluation ]; then
+              exit 1
+          fi
+          
+          # Check the installation path exists
+          echo "Check the installation path exists"
+          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] && [ -d "${{ env.plugin_install_directory }}" ] && [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
           if [[ $pathExists = false ]]; then
             echo "IBM installations do not exist"
             exit 1
@@ -324,10 +382,16 @@ jobs:
             echo "unentitledDataDiskIds: ${unentitledDataDiskIds}"
 
             entitledOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name entitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
-            echo "unentitledOsDiskId: ${unentitledOsDiskId}"
+            echo "entitledOsDiskId: ${entitledOsDiskId}"
 
             entitledDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name entitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
-            echo "unentitledDataDiskIds: ${unentitledDataDiskIds}"
+            echo "entitledDataDiskIds: ${entitledDataDiskIds}"
+
+            evaluationOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name evaluation${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
+            echo "evaluationOsDiskId: ${evaluationOsDiskId}"
+
+            evaluationDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name evaluation${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
+            echo "evaluationDataDiskIds: ${evaluationDataDiskIds}"
 
             vmForImage=$(az vm list --resource-group ${{ env.testResourceGroup }} --query "[?name=='${{ env.vmName }}']" | jq -r 'map(.id) | join(" ")')
             echo $vmForImage
@@ -337,7 +401,7 @@ jobs:
 
             az vm delete --verbose --ids $vmForImage --yes
             az resource delete --verbose --ids $resourcesToDelete
-            az disk delete --yes --resource-group ${{ env.testResourceGroup }} --ids ${unentitledOsDiskId} ${unentitledDataDiskIds} ${entitledOsDiskId} ${entitledDataDiskIds}
+            az disk delete --yes --resource-group ${{ env.testResourceGroup }} --ids ${unentitledOsDiskId} ${unentitledDataDiskIds} ${entitledOsDiskId} ${entitledDataDiskIds} ${evaluationOsDiskId} ${evaluationDataDiskIds}
   summary:
     needs: build
     if: always()
