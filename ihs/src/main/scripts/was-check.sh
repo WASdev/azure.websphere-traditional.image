@@ -26,7 +26,7 @@ read -r -a ibmIdCredentials <<< "$(echo $customData | base64 -d)"
 # Check whether IBMid is entitled or not, or user is trying to use an evaluation edition
 result=$UNENTITLED
 if [ ${#ibmIdCredentials[@]} -eq 2 ]; then
-    echo "$(date): Start to check entitlement." > $WAS_LOG_PATH
+    echo "$(date): Start to check entitlement." >> $WAS_LOG_PATH
     
     userName=${ibmIdCredentials[0]}
     password=${ibmIdCredentials[1]}
