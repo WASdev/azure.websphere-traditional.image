@@ -56,9 +56,9 @@ jobs:
           if [ $? -eq 0 ]; then
               output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
               if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
-                  echo "Entitlement check succeed."
+                  echo "Entitlement check succeeded."
               elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
-                  echo "Entitlement check is not available."
+                  echo "Entitlement check result is unknown as no packages found from `listAvailablePackages`."
                   rm -rf storage_file && rm -rf log_file
                   exit 1
               else
@@ -95,7 +95,7 @@ jobs:
                 }
             EOF
             else
-                echo "Job succeed, send notification to Teams"
+                echo "Job succeeded, send notification to Teams"
                 curl ${{ env.msTeamsWebhook }} \
                 -H 'Content-Type: application/json' \
                 --data-binary @- << EOF
