@@ -71,7 +71,7 @@ jobs:
               rm -rf storage_file && rm -rf log_file
               exit 1
           fi
-  summary:
+  notification:
     needs: check
     if: always()
     runs-on: ubuntu-latest
