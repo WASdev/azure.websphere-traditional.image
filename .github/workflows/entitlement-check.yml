@@ -20,6 +20,7 @@ on:
 env:
   entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
   entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
+  userName: ${{ secrets.USER_NAME }}
   msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   IM_INSTALL_DIRECTORY: /tmp/IBM/InstallationManager/V1.9
   IM_INSTALL_KIT: agent.installer.linux.gtk.x86_64.zip
@@ -79,7 +80,7 @@ jobs:
       - name: summarize jobs
         if: always()
         run: |
-            workflow_jobs=$(curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/WASdev/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}/jobs)
+            workflow_jobs=$(curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}/jobs)
 
             success_build_job=$(echo $workflow_jobs | jq '.jobs | map(select(.name=="build" and .conclusion=="success")) | length')
             echo "$success_build_job"
@@ -91,7 +92,7 @@ jobs:
                 {
                 "@context":"http://schema.org/extensions",
                 "@type":"MessageCard",
-                "text":"Entitlement check failed, please take a look at: https://github.com/WASdev/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
+                "text":"Entitlement check failed, please take a look at: https://github.com/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
                 }
             EOF
             else
@@ -102,7 +103,7 @@ jobs:
                 {
                 "@context":"http://schema.org/extensions",
                 "@type":"MessageCard",
-                "text":"Entitlement check succeeded, details pls see: https://github.com/WASdev/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
+                "text":"Entitlement check succeeded, details pls see: https://github.com/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
                 }
             EOF
             fi
