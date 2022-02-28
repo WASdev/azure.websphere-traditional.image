@@ -1,0 +1,109 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Entitlement check
+
+# Controls when the action will run. 
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  # Allows you to run this workflow using GitHub APIs
+  # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
+  # REPO_NAME=WASdev/azure.websphere-traditional.image
+  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/entitlement-check.yml/dispatches --data '{"ref": "main"}'
+  repository_dispatch:
+    types: [entitlement-check]
+  # sample request
+  # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
+  # REPO_NAME=WASdev/azure.websphere-traditional.image
+  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "entitlement-check"}'
+
+env:
+  entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
+  entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
+  userName: ${{ secrets.USER_NAME }}
+  msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
+  IM_INSTALL_DIRECTORY: /tmp/IBM/InstallationManager/V1.9
+  IM_INSTALL_KIT: agent.installer.linux.gtk.x86_64.zip
+  IM_INSTALL_KIT_URL: https://public.dhe.ibm.com/ibmdl/export/pub/software/im/zips/agent.installer.linux.gtk.x86_64.zip
+  WAS_ND_VERSION_ENTITLED: ND.v90_9.0.5007
+  NO_PACKAGES_FOUND: "No packages were found"
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "check"
+  check:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Run entitlement check
+        run: |
+          # Create installation directories
+          mkdir -p ${IM_INSTALL_DIRECTORY}
+
+          # Install IBM Installation Manager
+          wget -O "$IM_INSTALL_KIT" "$IM_INSTALL_KIT_URL" -q
+          mkdir im_installer
+          unzip -q "$IM_INSTALL_KIT" -d im_installer
+          chmod -R 755 ./im_installer/*
+          ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
+
+          # Save credentials to a secure storage file
+          ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
+              -userName ${{ env.entitledIbmUserId }} -userPassword ${{ env.entitledIbmPassword }} -passportAdvantage
+          
+          # Verify the entitlement check result
+          if [ $? -eq 0 ]; then
+              output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
+              if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
+                  echo "Entitlement check succeeded."
+              elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
+                  echo "Entitlement check result is unknown as no packages found from `listAvailablePackages`."
+                  rm -rf storage_file && rm -rf log_file
+                  exit 1
+              else
+                  echo "Entitlement check failed."
+                  rm -rf storage_file && rm -rf log_file
+                  exit 1
+              fi
+          else
+              echo "Cannot connect to Passport Advantage."
+              rm -rf storage_file && rm -rf log_file
+              exit 1
+          fi
+  notification:
+    needs: check
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: send notification
+        if: always()
+        run: |
+            workflow_jobs=$(curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}/jobs)
+
+            success_check_job=$(echo $workflow_jobs | jq '.jobs | map(select(.name=="check" and .conclusion=="success")) | length')
+            echo "$success_check_job"
+            if (($success_check_job == 0));then
+                echo "Entitlement check job failed, send notification to Teams."
+                curl ${{ env.msTeamsWebhook }} \
+                -H 'Content-Type: application/json' \
+                --data-binary @- << EOF
+                {
+                "@context":"http://schema.org/extensions",
+                "@type":"MessageCard",
+                "text":"Entitlement check failed, please take a look at: https://github.com/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
+                }
+            EOF
+            else
+                echo "Entitlement check job succeeded, send notification to Teams."
+                curl ${{ env.msTeamsWebhook }} \
+                -H 'Content-Type: application/json' \
+                --data-binary @- << EOF
+                {
+                "@context":"http://schema.org/extensions",
+                "@type":"MessageCard",
+                "text":"Entitlement check succeeded, details pls see: https://github.com/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
+                }
+            EOF
+            fi
