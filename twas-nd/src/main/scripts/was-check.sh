@@ -17,15 +17,17 @@
 # Get tWAS installation properties
 source /datadrive/virtualimage.properties
 
-echo "$(date): Start to check entitlement." > $WAS_LOG_PATH
+echo "$(date): Start to check IBMid." > $WAS_LOG_PATH
 
 # Read custom data from ovf-env.xml
 customData=`xmllint --xpath "//*[local-name()='Environment']/*[local-name()='ProvisioningSection']/*[local-name()='LinuxProvisioningConfigurationSet']/*[local-name()='CustomData']/text()" /var/lib/waagent/ovf-env.xml`
 read -r -a ibmIdCredentials <<< "$(echo $customData | base64 -d)"
 
-# Check whether IBMid is entitled or not
+# Check whether IBMid is entitled or not, or user is trying to use an evaluation edition
 result=$UNENTITLED
 if [ ${#ibmIdCredentials[@]} -eq 2 ]; then
+    echo "$(date): Start to check entitlement." >> $WAS_LOG_PATH
+
     userName=${ibmIdCredentials[0]}
     password=${ibmIdCredentials[1]}
     
@@ -38,23 +40,26 @@ if [ ${#ibmIdCredentials[@]} -eq 2 ]; then
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
     echo $output | grep -q "$WAS_ND_VERSION_ENTITLED" && result=$ENTITLED
     echo $output | grep -q "$NO_PACKAGES_FOUND" && result=$UNDEFINED
+
+    echo "$(date): Entitlement check completed, start to update WebSphere installation." >> $WAS_LOG_PATH
+    if [ ${result} = $ENTITLED ]; then
+        # Update all packages for the entitled user
+        output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll -repositories "$REPOSITORY_URL" \
+            -acceptLicense -log log_file -installFixes recommended -secureStorageFile storage_file -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress)
+        echo "$output" >> $WAS_LOG_PATH
+    else
+        # Remove tWAS installation for the un-entitled or undefined user
+        output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl uninstall "$WAS_ND_TRADITIONAL" "$IBM_JAVA_SDK" -installationDirectory ${WAS_ND_INSTALL_DIRECTORY})
+        echo "$output" >> $WAS_LOG_PATH
+        rm -rf /datadrive/IBM && rm -rf /datadrive/virtualimage.properties
+    fi
+    echo "$(date): WebSphere installation updated." >> $WAS_LOG_PATH
 else
-    echo "Invalid input format." >> $WAS_LOG_PATH
+    # invalid format of the input will be recognized as evaluation usage
+    result=$EVALUATION
+    echo "$(date): Evaluation usage is selected, neither the entitlement check nor the iFixes will be applied." >> $WAS_LOG_PATH
 fi
 
-echo "$(date): Entitlement check completed, start to update WebSphere installation." >> $WAS_LOG_PATH
-if [ ${result} = $ENTITLED ]; then
-    # Update all packages for the entitled user
-    output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll -repositories "$REPOSITORY_URL" \
-        -acceptLicense -log log_file -installFixes recommended -secureStorageFile storage_file -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress)
-    echo "$output" >> $WAS_LOG_PATH
-else
-    # Remove tWAS installation for the un-entitled or undefined user
-    output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl uninstall "$WAS_ND_TRADITIONAL" "$IBM_JAVA_SDK" -installationDirectory ${WAS_ND_INSTALL_DIRECTORY})
-    echo "$output" >> $WAS_LOG_PATH
-    rm -rf /datadrive/IBM && rm -rf /datadrive/virtualimage.properties
-fi
-echo "$(date): WebSphere installation updated." >> $WAS_LOG_PATH
 echo ${result} >> $WAS_LOG_PATH
 
 # Scrub the custom data from files which contain sensitive information
