@@ -40,7 +40,7 @@ env:
   msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   location: eastus
   # Installation directory, must be updated if virtualimage.properties/WAS_ND_INSTALL_DIRECTORY changed 
-  was_nd_install_directory: /datadrive/IBM/WebSphere/ND/V9
+  was_nd_install_directory: /datadrive/IBM/WebSphere/ND/V9/bin
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -121,6 +121,18 @@ jobs:
       - name: Create environment variable for VM
         id: env-vm-ip
         run: echo "wlsPublicIP=${{steps.query-vm-ip.outputs.publicIP}}" >> $GITHUB_ENV
+      - name: Output installation log
+        run: |
+          echo "pubilc IP of VM: ${wlsPublicIP}"
+          echo install sshpass
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
+          echo "Output stdout:"
+          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
+          echo "$result"
+          echo "Output stderr:"
+          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stderr')
+          echo "$result"
       - name: Install cifs-utils
         run: |
           echo "pubilc IP of VM: ${wlsPublicIP}"
