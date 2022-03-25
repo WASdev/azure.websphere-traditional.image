@@ -64,18 +64,18 @@ ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile
 if [ $? -eq 0 ]; then
     output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
     if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
-        echo "IBM account entitlement check succeed."
+        echo "$(date): IBMid entitlement check succeeded."
     elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
-        echo "IBM account entitlement check is not available."
+        echo "$(date): IBMid entitlement check is not available."
         rm -rf storage_file && rm -rf log_file
         exit 1
     else
-        echo "IBM account entitlement check failed."
+        echo "$(date): IBMid entitlement check failed."
         rm -rf storage_file && rm -rf log_file
         exit 1
     fi
 else
-    echo "Cannot connect to Passport Advantage."
+    echo "$(date): Cannot connect to Passport Advantage."
     rm -rf storage_file && rm -rf log_file
     exit 1
 fi
@@ -85,19 +85,51 @@ ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$IBM_HTTP_SERVER" "$IBM_JAVA
     -installationDirectory ${IHS_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -secureStorageFile storage_file -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
+if [ $? -eq 0 ]; then
+    echo "$(date): IBM HTTP Server V9 installed successfully."
+else
+    echo "$(date): IBM HTTP Server V9 failed to be installed."
+    rm -rf storage_file && rm -rf log_file
+    exit 1
+fi
+
 # Install Web Server Plug-ins V9 for IBM WebSphere Application Server using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WEBSPHERE_PLUGIN" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
     -installationDirectory ${PLUGIN_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -secureStorageFile storage_file -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
+
+if [ $? -eq 0 ]; then
+    echo "$(date): Web Server Plug-ins V9 installed successfully."
+else
+    echo "$(date): Web Server Plug-ins V9 failed to be installed."
+    rm -rf storage_file && rm -rf log_file
+    exit 1
+fi
 
 # Install WebSphere Customization Toolbox V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WEBSPHERE_WCT" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
     -installationDirectory ${WCT_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -secureStorageFile storage_file -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
+if [ $? -eq 0 ]; then
+    echo "$(date): WebSphere Customization Toolbox V9 installed successfully."
+else
+    echo "$(date): WebSphere Customization Toolbox V9 failed to be installed."
+    rm -rf storage_file && rm -rf log_file
+    exit 1
+fi
+
 # Update packages and apply iFixes
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll -repositories "$REPOSITORY_URL" \
             -acceptLicense -log log_file -installFixes recommended -secureStorageFile storage_file -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
+
+if [ $? -eq 0 ]; then
+    echo "$(date): Successfully updated packages and applied iFixes."
+else
+    echo "$(date): Failed to update packages and apply iFixes."
+    rm -rf storage_file && rm -rf log_file
+    exit 1
+fi
 
 # Remove temporary files
 rm -rf storage_file && rm -rf log_file
