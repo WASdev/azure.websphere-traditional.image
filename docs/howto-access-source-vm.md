@@ -30,13 +30,15 @@ Follow steps below to connect to the source VM and inspect the issue.
       sudo -i
       ```
 
-    1. View environment variables defined in `/datadrive/virtualimage.properties`.
+    1. View and export environment variables defined in `/datadrive/virtualimage.properties`.
        ```bash
        cat /datadrive/virtualimage.properties
+       source /datadrive/virtualimage.properties
        ```
 
        Common to all CICDs:
        * `IM_INSTALL_DIRECTORY` is the directory where IBM Installation Manager is installed.
+       * Export IBM Installation Manager installation data: `${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl exportinstalldata imagent.zip`
 
        For `twas-nd CICD`:
        * `WAS_ND_INSTALL_DIRECTORY` is the directory where IBM WebSphere Application Server Network Deployment is installed.
