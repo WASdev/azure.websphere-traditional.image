@@ -1,6 +1,6 @@
 # How to access the source VM when image build CI/CD failed
 
-Normally, the image build CICD ([ihs CICD](../.github/workflows/ihsBuild.yml), [twas-base CICD](../.github/workflows/twas-baseBuild.yml) and [twas-nd CICD](../.github/workflows/twas-ndBuild.yml)) workflow will provision the source VM, install software package, execute integration test and finally generate SAAS urls for OS disk and data disk which will be used for creating/updating Azure virtual machine offer(s) in Azure Partner Center. 
+Normally, the image build CICD ([ihs CICD](../.github/workflows/ihsBuild.yml), [twas-base CICD](../.github/workflows/twas-baseBuild.yml) and [twas-nd CICD](../.github/workflows/twas-ndBuild.yml)) workflow will provision the source VM, install software package, execute integration test and finally generate SAS urls for OS disk and data disk which will be used for creating/updating Azure virtual machine offer(s) in Azure Partner Center. 
 
 However, if the CICD workflow failed at step of installing software package due to unknown issues, user usually needs to access the source VM to triage the issue, and/or collect logs for issue reporting. Here're instructions on how to access the source VM.
 
