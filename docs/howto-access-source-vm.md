@@ -51,7 +51,7 @@ Follow steps below to connect to the source VM and inspect the issue.
        * `PLUGIN_INSTALL_DIRECTORY` is the directory where Web Server Plug-ins for IBM WebSphere Application Server is installed.
        * `WCT_INSTALL_DIRECTORY` is the directory where WebSphere Customization Toolbox is installed
 
-    1. Change directory to the working directory of VM extension exectuion.
+    1. Change directory to the working directory of VM extension execution.
        ```bash
        cd /var/lib/waagent/custom-script/download/0/
        ```
