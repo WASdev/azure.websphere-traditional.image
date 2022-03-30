@@ -76,8 +76,8 @@ jobs:
         run: mvn -DskipTests clean install --file azure-javaee-iaas/pom.xml
       - name: Build and test
         run: |
-          # Add -Dgit.tag=<your local branch> if you are not using main
-          mvn -Dgit.repo=${{ env.userName }} -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=wsp -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk clean install --file ${{ env.offerName }}/twas-base/pom.xml
+          echo "Branch name is $GITHUB_REF_NAME"
+          mvn -Dgit.repo=${{ env.userName }} -Dgit.tag=$GITHUB_REF_NAME -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=wsp -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk clean install --file ${{ env.offerName }}/twas-base/pom.xml
       - uses: azure/login@v1
         id: azure-login
         with:
