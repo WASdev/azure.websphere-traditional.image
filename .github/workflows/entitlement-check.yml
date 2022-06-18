@@ -56,6 +56,8 @@ jobs:
           # Verify the entitlement check result
           if [ $? -eq 0 ]; then
               output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
+              echo "listAvailablePackages:"
+              echo "$output"
               if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
                   echo "Entitlement check succeeded."
               elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
