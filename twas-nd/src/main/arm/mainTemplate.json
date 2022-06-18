@@ -232,7 +232,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
                         "name": "[concat(variables('name_virtualMachine'), '-disk')]",
                         "createOption": "FromImage",
                         "vhd": {
-                            "uri": "[concat(reference(variables('name_storageAccount')).primaryEndpoints.blob, 'vhds/', variables('name_virtualMachine'), '.vhd')]"
+                            "uri": "[uri(reference(variables('name_storageAccount')).primaryEndpoints.blob, concat('vhds/', variables('name_virtualMachine'), '.vhd'))]"
                         }
                     },
                     "dataDisks": [
@@ -241,7 +241,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
                             "diskSizeGB": "[int('${datadisk.sizeGB}')]",
                             "lun": 0,
                             "vhd": {
-                                "uri": "[concat(reference(variables('name_storageAccount')).primaryEndpoints.blob, 'vhds/', variables('name_virtualMachine'), 'datadisk1.vhd')]"
+                                "uri": "[uri(reference(variables('name_storageAccount')).primaryEndpoints.blob, concat('vhds/', variables('name_virtualMachine'), 'datadisk1.vhd'))]"
                             },
                             "createOption": "Empty"
                         }
