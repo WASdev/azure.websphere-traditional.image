@@ -197,7 +197,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
         {
             "name": "[variables('name_storageAccount')]",
             "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "${azure.apiVersion2}",
+            "apiVersion": "${azure.apiVersionSA}",
             "location": "[parameters('location')]",
             "properties": {},
             "kind": "Storage",
@@ -207,7 +207,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
         },
         {
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "${azure.apiVersion}",
+            "apiVersion": "${azure.apiVersionVM}",
             "name": "[variables('name_virtualMachine')]",
             "location": "[parameters('location')]",
             "dependsOn": [
@@ -232,7 +232,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
                         "name": "[concat(variables('name_virtualMachine'), '-disk')]",
                         "createOption": "FromImage",
                         "vhd": {
-                            "uri": "[concat(reference(variables('name_storageAccount')).primaryEndpoints.blob, 'vhds/', variables('name_virtualMachine'), '.vhd')]"
+                            "uri": "[uri(reference(variables('name_storageAccount')).primaryEndpoints.blob, concat('vhds/', variables('name_virtualMachine'), '.vhd'))]"
                         }
                     },
                     "dataDisks": [
@@ -241,7 +241,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
                             "diskSizeGB": "[int('${datadisk.sizeGB}')]",
                             "lun": 0,
                             "vhd": {
-                                "uri": "[concat(reference(variables('name_storageAccount')).primaryEndpoints.blob, 'vhds/', variables('name_virtualMachine'), 'datadisk1.vhd')]"
+                                "uri": "[uri(reference(variables('name_storageAccount')).primaryEndpoints.blob, concat('vhds/', variables('name_virtualMachine'), 'datadisk1.vhd'))]"
                             },
                             "createOption": "Empty"
                         }
@@ -264,7 +264,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
         },
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
-            "apiVersion": "${azure.apiVersion}",
+            "apiVersion": "${azure.apiVersionVM}",
             "name": "[concat(variables('name_virtualMachine'), '/CustomScript')]",
             "location": "[parameters('location')]",
             "dependsOn": [

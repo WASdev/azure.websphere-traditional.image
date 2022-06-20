@@ -24,7 +24,7 @@ env:
   # Commit hash from https://github.com/Azure/azure-javaee-iaas/commits/main
   ref_javaee: 13fe6ec487024eb61355d661ab5700ae90cb0a8f
   # Commit hash from https://github.com/Azure/arm-ttk/commits/master
-  ref_armttk: d97aa57d259e2fc8562e11501b1cf902265129d9
+  ref_armttk: cf5c927eaf1f5652556e86a6b67816fc910d1b74
   offerName: azure.websphere-traditional.image
   userName: ${{ secrets.USER_NAME }}
   azureCredentials: ${{ secrets.AZURE_CREDENTIALS }}
