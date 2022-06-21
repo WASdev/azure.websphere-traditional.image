@@ -128,10 +128,10 @@ jobs:
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
           echo "Output stdout:"
-          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
+          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
           echo "$result"
           echo "Output stderr:"
-          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stderr')
+          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stderr')
           echo "$result"
       - name: Install cifs-utils
         run: |
@@ -140,7 +140,7 @@ jobs:
           echo install sshpass
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo  -S yum install cifs-utils -y'
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo  -S yum install cifs-utils -y'
       - name: Update applications
         run: |
           echo "pubilc IP of VM: ${wlsPublicIP}"
@@ -148,7 +148,7 @@ jobs:
           echo install sshpass
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
       - name: Deprovision
         run: |
           echo "pubilc IP of VM: ${wlsPublicIP}"
@@ -156,7 +156,7 @@ jobs:
           echo install sshpass
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
       - name: Generate VM Image
         run: |
           # Update the access level of vhd container
@@ -191,7 +191,7 @@ jobs:
           isCloudInitReady=false
           while [ $isCloudInitReady = false ]
           do
-            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
+            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
               echo "waiting for was entitlement/evaluation check started..."
               sleep 5
@@ -203,7 +203,7 @@ jobs:
           isDone=false
           while [ $isDone = false ]
           do
-            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
+            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
             # Remove special characters
             result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
             if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
@@ -221,7 +221,7 @@ jobs:
 
           # Check the installation path is not removed
           echo "Check the installation path is not removed"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ -d "${{ env.was_nd_install_directory }}" ]; then echo true; else echo false; fi')
+          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ -d "${{ env.was_nd_install_directory }}" ]; then echo true; else echo false; fi')
           if [[ $pathExists = true ]]; then
             echo "IBM installations still exist"
             exit 1
@@ -250,7 +250,7 @@ jobs:
           isCloudInitReady=false
           while [ $isCloudInitReady = false ]
           do
-            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
+            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
               echo "waiting for was entitlement/evaluation check started..."
               sleep 5
@@ -262,7 +262,7 @@ jobs:
           isDone=false
           while [ $isDone = false ]
           do
-            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
+            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
             # Remove special characters
             result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
             if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
@@ -280,7 +280,7 @@ jobs:
           
           # Check the installation path is removed
           echo "Check the installation path is removed"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ -d "${{ env.was_nd_install_directory }}" ]; then echo true; else echo false; fi')
+          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ -d "${{ env.was_nd_install_directory }}" ]; then echo true; else echo false; fi')
           if [[ $pathExists = false ]]; then
             echo "IBM installations do not exist"
             exit 1
@@ -308,7 +308,7 @@ jobs:
           isCloudInitReady=false
           while [ $isCloudInitReady = false ]
           do
-            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
+            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
             if [[ $isCloudInitReady = false ]]; then
               echo "waiting for entitlement/evaluation check started..."
               sleep 5
@@ -320,7 +320,7 @@ jobs:
           isDone=false
           while [ $isDone = false ]
           do
-            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} '(tail -n1) </var/log/cloud-init-was.log')
+            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} '(tail -n1) </var/log/cloud-init-was.log')
             # Remove special characters
             result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
             if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
@@ -338,7 +338,7 @@ jobs:
           
           # Check the installation path exists
           echo "Check the installation path exists"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} 'if [ -d "${{ env.was_nd_install_directory }}" ]; then echo true; else echo false; fi')
+          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} 'if [ -d "${{ env.was_nd_install_directory }}" ]; then echo true; else echo false; fi')
           if [[ $pathExists = false ]]; then
             echo "IBM installations do not exist"
             exit 1
