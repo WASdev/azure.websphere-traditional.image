@@ -95,11 +95,7 @@
                             "priority": 320,
                             "direction": "Inbound",
                             "destinationPortRanges": [
-                                "22",
-                                "9043",
-                                "9060",
-                                "9080",
-                                "9443"
+                                "22"
                             ]
                         }
                     }
