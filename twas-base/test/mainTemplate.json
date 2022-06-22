@@ -10,7 +10,7 @@
             "type": "string",
             "allowedValues": [
                 "Entitled",
-                "Undefined",
+                "Unentitled",
                 "Evaluation"
             ]
         },

@@ -16,6 +16,7 @@
 
 # Deployment mode: Entitled, Unentitled or Evaluation
 deploymentMode=$1
+echo "The input deployment mode to be verified is ${deploymentMode}."
 
 # Get tWAS installation properties
 source /datadrive/virtualimage.properties
@@ -40,9 +41,10 @@ do
     fi
 done
 
-# Check if the entitlement check result matches with the input deployment mode
-if [ ${result} != ${deploymentMode} ]; then
-    echo "The entitlement check result (${result}) doesn't match with the input deployment mode (${deploymentMode})."
+# Check if the entitlement/evaluation check result matches with the input deployment mode
+echo "The entitlement/evaluation check result is ${result}."
+if [ ${deploymentMode} != ${result} ]; then
+    echo "The entitlement/evaluation check result (${result}) doesn't match with the input deployment mode (${deploymentMode})."
     exit 1
 fi
 
@@ -53,5 +55,5 @@ elif [ -d ${WAS_BASE_INSTALL_DIRECTORY}/bin ]; then
     echo "The installation directory still exists, it should be removed for the unentitled user."
     exit 1
 else
-    echo "The installation is removed for the unentitled user."
+    echo "The installation is successfully removed for the unentitled user."
 fi
