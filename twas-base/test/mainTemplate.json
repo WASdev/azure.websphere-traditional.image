@@ -6,6 +6,17 @@
             "type": "string",
             "defaultValue": "[resourceGroup().location]"
         },
+        "deploymentMode": {
+            "type": "string",
+            "allowedValues": [
+                "Entitled",
+                "Unentitled",
+                "Evaluation"
+            ]
+        },
+        "scriptLocation": {
+            "type": "string"
+        },
         "dnsLabelPrefix": {
             "defaultValue": "wsp",
             "type": "string"
@@ -84,11 +95,7 @@
                             "priority": 320,
                             "direction": "Inbound",
                             "destinationPortRanges": [
-                                "22",
-                                "9043",
-                                "9060",
-                                "9080",
-                                "9443"
+                                "22"
                             ]
                         }
                     }
@@ -198,6 +205,27 @@
                             "id": "[variables('ref_networkInterface')]"
                         }
                     ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2020-06-01",
+            "name": "[concat(variables('name_virtualMachine'), '/CustomScript')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', variables('name_virtualMachine'))]"
+            ],
+            "properties": {
+                "autoUpgradeMinorVersion": true,
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "settings": {
+                    "fileUris": [
+                        "[uri(parameters('scriptLocation'), 'check.sh')]"
+                    ],
+                    "commandToExecute": "[concat('sh check.sh ', parameters('deploymentMode'))]"
                 }
             }
         }

@@ -39,10 +39,7 @@ env:
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   location: eastus
-  # Installation directory, must be updated if virtualimage.properties changed 
-  ihs_install_directory: /datadrive/IBM/WebSphere/IHS/V9/bin
-  plugin_install_directory: /datadrive/IBM/WebSphere/Plugins/V9/bin
-  wct_install_directory: /datadrive/IBM/WebSphere/Toolbox/V9/bin
+  scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/ihs/test/
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -130,10 +127,7 @@ jobs:
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
           echo "Output stdout:"
-          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
-          echo "$result"
-          echo "Output stderr:"
-          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stderr')
+          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
           echo "$result"
       - name: Install cifs-utils
         run: |
@@ -142,7 +136,7 @@ jobs:
           echo install sshpass
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum install cifs-utils -y'
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum install cifs-utils -y'
       - name: Update applications
         run: |
           echo "pubilc IP of VM: ${wlsPublicIP}"
@@ -150,7 +144,7 @@ jobs:
           echo install sshpass
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
       - name: Deprovision
         run: |
           echo "pubilc IP of VM: ${wlsPublicIP}"
@@ -158,7 +152,7 @@ jobs:
           echo install sshpass
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
       - name: Generate VM Image
         run: |
           # Update the access level of vhd container
@@ -176,59 +170,7 @@ jobs:
           az deployment group create --resource-group ${{ env.testResourceGroup }} \
               --name unentitled${{ github.run_id }}${{ github.run_number }} \
               --template-file ./mainTemplate.json \
-              --parameters ibmUserId=${{ env.unEntitledIbmUserId }} ibmUserPwd=${{ env.unEntitledIbmPassword }} vmName=unentitled${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
-      - name: Verify that the IBM installations for unentitled vm
-        run: |
-          echo "query public ip"
-          untitledVMIP=$(az vm show \
-            --resource-group ${{ env.testResourceGroup }} \
-            --name unentitled${{ github.run_id }}${{ github.run_number }} -d \
-            --query publicIps -o tsv)
-          echo "pubilc IP of VM: ${untitledVMIP}"
-          echo "Verifying WebSphere server installation"
-          echo install sshpass
-          sudo apt-get install -y sshpass
-          timeout 3m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${untitledVMIP} 22
-
-          isCloudInitReady=false
-          while [ $isCloudInitReady = false ]
-          do
-            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
-            if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for entitlement/evaluation check started..."
-              sleep 5
-            else
-              echo "entitlement/evaluation check started..."
-            fi
-          done
-
-          isDone=false
-          while [ $isDone = false ]
-          do
-            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
-            # Remove special characters
-            result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
-            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
-                isDone=true
-            else
-                echo "waiting for entitlement/evaluation check completed..."
-                sleep 5
-            fi
-          done
-          echo $result
-
-          if [ ${result} = Entitled ]; then
-              exit 1
-          fi
-
-          # Check the installation path is not removed
-          echo "Check the installation path is not removed"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${untitledVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] || [ -d "${{ env.plugin_install_directory }}" ] || [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
-          if [[ $pathExists = true ]]; then
-            echo "IBM installations still exist"
-            exit 1
-          fi
-
+              --parameters scriptLocation=${{ env.scriptLocation }} deploymentMode=Unentitled ibmUserId=${{ env.unEntitledIbmUserId }} ibmUserPwd=${{ env.unEntitledIbmPassword }} vmName=unentitled${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
       - name: Deploy VM using image with entitled account
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
@@ -236,57 +178,7 @@ jobs:
           az deployment group create --resource-group ${{ env.testResourceGroup }} \
               --name entitled${{ github.run_id }}${{ github.run_number }} \
               --template-file ./mainTemplate.json \
-              --parameters ibmUserId=${{ env.entitledIbmUserId }} ibmUserPwd=${{ env.entitledIbmPassword }} vmName=entitled${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
-      - name: Verify that the IBM installations for entitled vm
-        run: |
-          echo "query public ip"
-          entitledVMIP=$(az vm show \
-            --resource-group ${{ env.testResourceGroup }} \
-            --name entitled${{ github.run_id }}${{ github.run_number }} -d \
-            --query publicIps -o tsv)
-          echo "pubilc IP of VM: ${entitledVMIP}"
-          echo "Verifying WebSphere server installation"
-          echo install sshpass
-          sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${entitledVMIP} 22
-          isCloudInitReady=false
-          while [ $isCloudInitReady = false ]
-          do
-            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
-            if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for entitlement/evaluation check started..."
-              sleep 5
-            else
-              echo "entitlement/evaluation check started..."
-            fi
-          done
-
-          isDone=false
-          while [ $isDone = false ]
-          do
-            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} '(tail -n1) </var/log/cloud-init-was.log')
-            # Remove special characters
-            result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
-            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
-                isDone=true
-            else
-                echo "waiting for entitlement/evaluation check completed..."
-                sleep 5
-            fi
-          done
-          echo $result
-
-          if [ ${result} != Entitled ]; then
-              exit 1
-          fi
-          
-          # Check the installation path is removed
-          echo "Check the installation path is removed"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${entitledVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] && [ -d "${{ env.plugin_install_directory }}" ] && [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
-          if [[ $pathExists = false ]]; then
-            echo "IBM installations do not exist"
-            exit 1
-          fi
+              --parameters scriptLocation=${{ env.scriptLocation }} deploymentMode=Entitled ibmUserId=${{ env.entitledIbmUserId }} ibmUserPwd=${{ env.entitledIbmPassword }} vmName=entitled${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
       - name: Deploy VM using image for evaluation usage
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
@@ -294,57 +186,7 @@ jobs:
           az deployment group create --resource-group ${{ env.testResourceGroup }} \
               --name evaluation${{ github.run_id }}${{ github.run_number }} \
               --template-file ./mainTemplate.json \
-              --parameters ibmUserId="" ibmUserPwd="" vmName=evaluation${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
-      - name: Verify the IBM installations for evaluation usage
-        run: |
-          echo "query public ip"
-          evaluationVMIP=$(az vm show \
-            --resource-group ${{ env.testResourceGroup }} \
-            --name evaluation${{ github.run_id }}${{ github.run_number }} -d \
-            --query publicIps -o tsv)
-          echo "pubilc IP of VM: ${evaluationVMIP}"
-          echo "Verifying WebSphere server installation"
-          echo install sshpass
-          sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${evaluationVMIP} 22
-          isCloudInitReady=false
-          while [ $isCloudInitReady = false ]
-          do
-            isCloudInitReady=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} 'if [ ! -f "/var/log/cloud-init-was.log" ]; then echo false; else echo true; fi')
-            if [[ $isCloudInitReady = false ]]; then
-              echo "waiting for entitlement/evaluation check started..."
-              sleep 5
-            else
-              echo "entitlement/evaluation check started..."
-            fi
-          done
-
-          isDone=false
-          while [ $isDone = false ]
-          do
-            result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} '(tail -n1) </var/log/cloud-init-was.log')
-            # Remove special characters
-            result=$(echo $result | sed $'s/[^[:alnum:]\t]//g')
-            if [[ "$result" == "Unentitled" ]] || [[ "$result" == "Entitled" ]] || [[ "$result" == "Undefined" ]] || [[ "$result" = "Evaluation" ]]; then
-                isDone=true
-            else
-                echo "waiting for entitlement/evaluation check completed..."
-                sleep 5
-            fi
-          done
-          echo $result
-
-          if [ ${result} != Evaluation ]; then
-              exit 1
-          fi
-          
-          # Check the installation path exists
-          echo "Check the installation path exists"
-          pathExists=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${evaluationVMIP} 'if [ -d "${{ env.ihs_install_directory }}" ] && [ -d "${{ env.plugin_install_directory }}" ] && [ -d "${{ env.wct_install_directory }}" ]; then echo true; else echo false; fi')
-          if [[ $pathExists = false ]]; then
-            echo "IBM installations do not exist"
-            exit 1
-          fi
+              --parameters scriptLocation=${{ env.scriptLocation }} deploymentMode=Evaluation ibmUserId="" ibmUserPwd="" vmName=evaluation${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
       - name: Generate SAS url
         id: generate-sas-blob-url
         run: |
