@@ -140,5 +140,17 @@ jobs:
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
           sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
-
+      - name: Deprovision the VM
+        run: |
+          echo "pubilc IP of VM: ${publicIP}"
+          echo "Deprovision starts"
+          echo install sshpass
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
+      - name: Deallocate and generalize the VM
+        run: |
+          az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
+          az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
+          
 
