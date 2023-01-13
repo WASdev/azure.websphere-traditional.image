@@ -206,6 +206,14 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
             }
         },
         {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "name": "[format('{0}/default/vhds', variables('name_storageAccount'))]",
+            "apiVersion": "${azure.apiVersionSA}",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('name_storageAccount'))]"
+            ]
+        },
+        {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "${azure.apiVersionVM}",
             "name": "[variables('name_virtualMachine')]",
