@@ -22,16 +22,21 @@ env:
   repoName: azure.websphere-traditional.image
   userName: ${{ secrets.USER_NAME }}
   azureCredentials: ${{ secrets.AZURE_CREDENTIALS }}
-  unEntitledIbmUserId: ${{ secrets.UNENTITLED_IBM_USER_ID }}
-  unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
   entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
-  vmName: vm${{ github.run_id }}${{ github.run_number }}
+  unEntitledIbmUserId: ${{ secrets.UNENTITLED_IBM_USER_ID }}
+  unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
+  msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
   testResourceGroup: twasBaseCISImageTest${{ github.run_id }}${{ github.run_number }}
+  vmName: vm${{ github.run_id }}${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
-  msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
+  containerName: vhds
+  osDiskSnapshotName: osDisk-backup
+  dataDiskSnapshotName: dataDisk-backup
+  osDiskVHDName: osdisk.vhd
+  dataDiskVHDName: datadisk.vhd
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-base-cis/test/
 
@@ -152,5 +157,52 @@ jobs:
         run: |
           az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
+      - name: Extract VHD files from the VM
+        run: |
+          # Take snapshots of the VM disks
+          osDiskId=$(az vm show \
+            -g ${{ env.testResourceGroup }} \
+            -n  ${{ env.vmName }} \
+            --query "storageProfile.osDisk.managedDisk.id" \
+            -o tsv)
+          az snapshot create \
+            -g ${{ env.testResourceGroup }} \
+            --source "$osDiskId" \
+            --name ${{ env.osDiskSnapshotName }}
+          dataDiskId=$(az vm show \
+            -g ${{ env.testResourceGroup }} \
+            -n  ${{ env.vmName }} \
+            --query "storageProfile.dataDisks[0].managedDisk.id" \
+            -o tsv)
+          az snapshot create \
+            -g ${{ env.testResourceGroup }} \
+            --source "$dataDiskId" \
+            --name ${{ env.dataDiskSnapshotName }}
           
-
+          # Generate VHD files
+          storageAccountKey=$(az storage account keys list \
+            --account-name ${{ env.vhdStorageAccountName }} \
+            --query "[?keyName=='key1'].value" -o tsv)
+          sasExpiryDuration=3600
+          osDiskSnapshotSas=$(az snapshot grant-access \
+            --resource-group ${{ env.testResourceGroup }} \
+            --name ${{ env.osDiskSnapshotName }} \
+            --duration-in-seconds $sasExpiryDuration \
+            --query [accessSas] -o tsv)
+          az storage blob copy start \
+            --destination-blob ${{ env.osDiskVHDName }} \
+            --destination-container ${{ env.containerName }} \
+            --account-name ${{ env.vhdStorageAccountName }} \
+            --account-key $storageAccountKey \
+            --source-uri $osDiskSnapshotSas
+          dataDiskSnapshotSas=$(az snapshot grant-access \
+            --resource-group ${{ env.testResourceGroup }} \
+            --name ${{ env.dataDiskSnapshotName }} \
+            --duration-in-seconds $sasExpiryDuration \
+            --query [accessSas] -o tsv)
+          az storage blob copy start \
+            --destination-blob ${{ env.dataDiskVHDName }} \
+            --destination-container ${{ env.containerName }} \
+            --account-name ${{ env.vhdStorageAccountName }} \
+            --account-key $storageAccountKey \
+            --source-uri $dataDiskSnapshotSas
