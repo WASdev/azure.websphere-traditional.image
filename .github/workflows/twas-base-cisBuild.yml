@@ -1,0 +1,144 @@
+# This is a basic workflow to help you get started with Actions
+
+name: twas-base-cis CICD
+
+# Controls when the action will run. 
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  # Allows you to run this workflow using GitHub APIs
+  # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
+  # REPO_NAME=WASdev/azure.websphere-traditional.image
+  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/twas-base-cisBuild.yml/dispatches --data '{"ref": "main"}'
+  repository_dispatch:
+    types: [integration-test-twasbase-cis, integration-test-all]
+  # sample request
+  # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
+  # REPO_NAME=WASdev/azure.websphere-traditional.image
+  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-twasbase-cis"}'
+  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-all"}'
+
+env:
+  repoName: azure.websphere-traditional.image
+  userName: ${{ secrets.USER_NAME }}
+  azureCredentials: ${{ secrets.AZURE_CREDENTIALS }}
+  unEntitledIbmUserId: ${{ secrets.UNENTITLED_IBM_USER_ID }}
+  unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
+  entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
+  entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
+  vmName: twasbasecisVM${{ github.run_id }}${{ github.run_number }}
+  vmAdminId: ${{ secrets.VM_ADMIN_ID }}
+  vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
+  testResourceGroup: twasBaseCISImageTest${{ github.run_id }}${{ github.run_number }}
+  vhdStorageAccountName: twasbasecisStorage${{ github.run_id }}${{ github.run_number }}
+  msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
+  location: eastus
+  scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-base-cis/test/
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Get versions of external dependencies
+        run: |
+          curl -Lo external-deps-versions.properties https://raw.githubusercontent.com/Azure/azure-javaee-iaas/main/external-deps-versions.properties
+          source external-deps-versions.properties
+          echo "azCliVersion=${AZ_CLI_VERSION}" >> $GITHUB_ENV
+          echo "refArmttk=${ARM_TTK_REFERENCE}" >> $GITHUB_ENV
+          echo "refJavaee=${AZURE_JAVAEE_IAAS_REFERENCE}" >> $GITHUB_ENV
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Checkout azure-javaee-iaas
+        uses: actions/checkout@v2
+        with:
+          repository: Azure/azure-javaee-iaas
+          path: azure-javaee-iaas
+          ref: ${{ env.refJavaee }}
+      - name: Checkout arm-ttk
+        uses: actions/checkout@v2
+        with:
+          repository: Azure/arm-ttk
+          path: arm-ttk
+          ref: ${{ env.refArmttk }}
+      - name: Checkout ${{ env.repoName }}
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.repoName }}
+          ref: ${{ github.event.inputs.ref }}
+      - name: Build azure-javaee-iaas
+        run: mvn -DskipTests clean install --file azure-javaee-iaas/pom.xml
+      - uses: azure/login@v1
+        id: azure-login
+        with:
+          creds: ${{ env.azureCredentials }}
+      - name: Build ${{ env.repoName }}
+        run: |
+          echo "Branch name is $GITHUB_REF_NAME"
+          mvn -Dgit.repo=${{ env.userName }} -Dgit.tag=$GITHUB_REF_NAME \
+            -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} \
+            -DstorageAccount=${{ env.vhdStorageAccountName }} -DvmName=${{ env.vmName }} \
+            -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=was \
+            -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
+            clean install --file ${{ env.repoName }}/twas-base-cis/pom.xml
+      - name: Deploy a CIS compliant RHEL 8.x VM and install twas Base server
+        run: |
+          cd ${{ env.repoName }}/twas-base-cis/target/cli
+          chmod a+x deploy.azcli
+          ./deploy.azcli -n twasBaseVMImageTestDeployment${{ github.run_id }}${{ github.run_number }} -g ${{ env.testResourceGroup }} -l ${{ env.location }}
+      - name: Query public IP of VM
+        id: query-vm-ip
+        uses: azure/CLI@v1
+        with:
+          azcliversion: ${{ env.azCliVersion }}
+          inlineScript: |
+            echo "query public ip"
+            publicIP=$(az vm show \
+              --resource-group ${{ env.testResourceGroup }} \
+              --name ${{ env.vmName }} -d \
+              --query publicIps -o tsv)
+            echo "##[set-output name=publicIP;]${publicIP}"
+      - name: Create environment variable for VM
+        id: env-vm-ip
+        run: echo "publicIP=${{steps.query-vm-ip.outputs.publicIP}}" >> $GITHUB_ENV
+      - name: Output installation log
+        run: |
+          echo "pubilc IP of VM: ${publicIP}"
+          echo install sshpass
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          echo "Output stdout:"
+          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
+          echo "$result"
+      - name: Install libXaw
+        run: |
+          echo "pubilc IP of VM: ${publicIP}"
+          echo "yum update starts"
+          echo install sshpass
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo  -S yum install libXaw -y'
+      - name: Install cifs-utils
+        run: |
+          echo "pubilc IP of VM: ${publicIP}"
+          echo "yum update starts"
+          echo install sshpass
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo  -S yum install cifs-utils -y'
+      - name: Update applications
+        run: |
+          echo "pubilc IP of VM: ${publicIP}"
+          echo "yum update starts"
+          echo install sshpass
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
+
+

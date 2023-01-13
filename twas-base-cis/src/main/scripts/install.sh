@@ -47,7 +47,6 @@ source /datadrive/virtualimage.properties
 
 # Install BigFix client
 setenforce 0
-yum install libXaw -y
 wget -O "$BES_AGENT_RPM" "$BES_AGENT_RPM_URL" -q
 rpm --import $GPG_RPM_PUBLIC_KEY_URL
 rpm -ivh $BES_AGENT_RPM
