@@ -26,11 +26,11 @@ env:
   unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
   entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
-  vmName: twasbasecisVM${{ github.run_id }}${{ github.run_number }}
+  vmName: vm${{ github.run_id }}${{ github.run_number }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
   testResourceGroup: twasBaseCISImageTest${{ github.run_id }}${{ github.run_number }}
-  vhdStorageAccountName: twasbasecisStorage${{ github.run_id }}${{ github.run_number }}
+  vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-base-cis/test/
