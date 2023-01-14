@@ -67,6 +67,26 @@ chmod -R 755 ./im_installer/*
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
     -userName "$userName" -userPassword "$password" -passportAdvantage
 
+# Check whether IBMid is entitled or not
+if [ $? -eq 0 ]; then
+    output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
+    if echo "$output" | grep "$WAS_BASE_VERSION_ENTITLED"; then
+        echo "$(date): IBMid entitlement check succeeded."
+    elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
+        echo "$(date): IBMid entitlement check is not available."
+        rm -rf storage_file && rm -rf log_file
+        exit 1
+    else
+        echo "$(date): IBMid entitlement check failed."
+        rm -rf storage_file && rm -rf log_file
+        exit 1
+    fi
+else
+    echo "$(date): Cannot connect to Passport Advantage."
+    rm -rf storage_file && rm -rf log_file
+    exit 1
+fi
+
 # Install IBM WebSphere Application Server V9 using IBM Instalation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
