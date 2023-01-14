@@ -227,6 +227,33 @@ jobs:
             --account-name ${{ env.vhdStorageAccountName }} \
             --account-key $storageAccountKey \
             --source-uri $dataDiskSnapshotSas
+
+          # Wait until blob copy of os disk snapshot and data disk snpashot are done
+          vhdFiles=( ${{ env.osDiskVHDName }} ${{ env.dataDiskVHDName }} )
+          for vhdFile in "${vhdFiles[@]}"; do
+            isDone=false
+            while [ $isDone = false ]
+            do
+              result=$(az storage blob show \
+                -c ${{ env.containerName }} \
+                -n $vhdFile \
+                --account-name ${{ env.vhdStorageAccountName }} \
+                --account-key $storageAccountKey \
+                --query properties.copy.status -o tsv)
+              if [[ $result = success ]]; then
+                  echo "Blob copy $vhdFile is done."
+                  isDone=true
+              else
+                  echo "Waiting for blob copy $vhdFile completed..."
+                  sleep 10
+              fi
+            done
+          done
+
+          # Revoke access for disk snapshots
+          az snapshot revoke-access --ids \
+            $(az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.osDiskSnapshotName }} --query id -o tsv) \
+            $(az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.dataDiskSnapshotName }} --query id -o tsv)
       - name: Deploy a VM using VHD files with entitled account
         run: |
           entitledRG=${{ env.testResourceGroup }}-entitled
@@ -243,7 +270,7 @@ jobs:
             --resource-group $entitledRG \
             --name $entitledVM \
             --attach-os-disk ${{ env.osDiskName }} \
-            --attach-data-disks -n ${{ env.dataDiskName }} \
+            --attach-data-disks ${{ env.dataDiskName }} \
             --os-type linux \
             --plan-name ${{ env.cisImageSku }} \
             --plan-product ${{ env.cisImageOffer }} \
@@ -261,8 +288,3 @@ jobs:
             --resource-group $entitledRG --vm-name $entitledVM \
             --publisher Microsoft.Azure.Extensions --version 2.0 \
             --settings "{\"fileUris\": [\"${{ env.scriptLocation }}check.sh\"], \"commandToExecute\":\"bash check.sh Entitled\"}"
-      - name: Delete all resources but vhd storage account in the test resource group
-        run: |
-          az snapshot revoke-access --ids \
-            az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.osDiskSnapshotName }} --query id -o tsv \
-            az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.dataDiskSnapshotName }} --query id -o tsv
