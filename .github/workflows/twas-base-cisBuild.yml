@@ -174,10 +174,11 @@ jobs:
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
           sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
-      - name: Deallocate and generalize the VM
+      - name: Generate image after deallocating and generalizing the VM
         run: |
           az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
+          az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }}
       - name: Extract VHD files from the VM
         run: |
           # Take snapshots of the VM disks
@@ -254,34 +255,23 @@ jobs:
           az snapshot revoke-access --ids \
             $(az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.osDiskSnapshotName }} --query id -o tsv) \
             $(az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.dataDiskSnapshotName }} --query id -o tsv)
-      - name: Deploy a VM using VHD files with entitled account
+      - name: Deploy a VM with entitled account
         run: |
           entitledRG=${{ env.testResourceGroup }}-entitled
           az group create -n $entitledRG -l ${{ env.location }}
-
-          az disk create -g $entitledRG -n ${{ env.osDiskName }} \
-            --source https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/${{ env.containerName }}/${{ env.osDiskVHDName }}
-          az disk create -g $entitledRG -n ${{ env.dataDiskName }} \
-            --source https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/${{ env.containerName }}/${{ env.dataDiskVHDName }}
+          imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
 
           entitledVM=${{ env.vmName }}-entitled
           customData="${{ env.entitledIbmUserId }} ${{ env.entitledIbmPassword }}"
           az vm create \
             --resource-group $entitledRG \
             --name $entitledVM \
-            --attach-os-disk ${{ env.osDiskName }} \
-            --attach-data-disks ${{ env.dataDiskName }} \
-            --os-type linux \
+            --image $imageResourceId \
             --plan-name ${{ env.cisImageSku }} \
             --plan-product ${{ env.cisImageOffer }} \
             --plan-publisher ${{ env.cisImagePublisher }} \
-            --custom-data "$customData"
-          
-          az vm user update \
-            --resource-group $entitledRG \
-            --name $entitledVM \
-            --username ${{ env.vmAdminId }} \
-            --password ${{ env.vmAdminPassword }}
+            --custom-data "$customData" \
+            --generate-ssh-keys
 
           az vm extension set --name CustomScript \
             --extension-instance-name check-vm \
