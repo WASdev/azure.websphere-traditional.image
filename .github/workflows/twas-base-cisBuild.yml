@@ -117,7 +117,7 @@ jobs:
         run: |
           cd ${{ env.repoName }}/twas-base-cis/target/cli
           chmod a+x deploy.azcli
-          ./deploy.azcli -n twasBaseVMImageTestDeployment${{ github.run_id }}${{ github.run_number }} -g ${{ env.testResourceGroup }} -l ${{ env.location }}
+          ./deploy.azcli -n testDeployment -g ${{ env.testResourceGroup }} -l ${{ env.location }}
       - name: Query public IP of VM
         id: query-vm-ip
         uses: azure/CLI@v1
