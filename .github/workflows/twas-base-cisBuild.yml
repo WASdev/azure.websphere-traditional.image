@@ -185,7 +185,7 @@ jobs:
           az group create -n $entitledRG -l ${{ env.location }}
           
           az deployment group create --resource-group $entitledRG --name testDeployment \
-            --template-file ${{ env.offerName }}/twas-base-cis/test/mainTemplate.json \
+            --template-file ${{ env.repoName }}/twas-base-cis/test/mainTemplate.json \
             --parameters deploymentMode=Entitled ibmUserId=${{ env.entitledIbmUserId }} ibmUserPwd=${{ env.entitledIbmPassword }} \
               imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
               cisImagePublisher=$cisImagePublisher cisImageOffer=$cisImageOffer cisImageSku=$cisImageSku \
