@@ -94,25 +94,6 @@ jobs:
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=was \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
             clean install --file ${{ env.repoName }}/twas-base-cis/pom.xml
-          
-          regex="^cis\.image\.publisher=(.*)"
-          if [[ $(cat ${{ env.repoName }}/config.properties | grep "cis.image.publisher") =~ $regex ]]; then
-            echo "cisImagePublisher="${BASH_REMATCH[1]}"" >> $GITHUB_ENV
-          else
-            exit 1
-          fi
-          regex="^cis\.image\.offer=(.*)"
-          if [[ $(cat ${{ env.repoName }}/config.properties | grep "cis.image.offer") =~ $regex ]]; then
-            echo "cisImageOffer="${BASH_REMATCH[1]}"" >> $GITHUB_ENV
-          else
-            exit 1
-          fi
-          regex="^cis\.image\.sku=(.*)"
-          if [[ $(cat ${{ env.repoName }}/config.properties | grep "cis.image.sku") =~ $regex ]]; then
-            echo "cisImageSku="${BASH_REMATCH[1]}"" >> $GITHUB_ENV
-          else
-            exit 1
-          fi
       - name: Deploy a CIS compliant RHEL 8.x VM and install twas Base server
         run: |
           cd ${{ env.repoName }}/twas-base-cis/target/cli
@@ -179,6 +160,39 @@ jobs:
           az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }}
+      - name: Deploy a VM with entitled account
+        run: |
+          # Retrieve CIS image info
+          regex="^cis\.image\.publisher=(.*)"
+          if [[ $(cat ${{ env.repoName }}/config.properties | grep "cis.image.publisher") =~ $regex ]]; then
+            cisImagePublisher="${BASH_REMATCH[1]}"
+          else
+            exit 1
+          fi
+          regex="^cis\.image\.offer=(.*)"
+          if [[ $(cat ${{ env.repoName }}/config.properties | grep "cis.image.offer") =~ $regex ]]; then
+            cisImageOffer="${BASH_REMATCH[1]}"
+          else
+            exit 1
+          fi
+          regex="^cis\.image\.sku=(.*)"
+          if [[ $(cat ${{ env.repoName }}/config.properties | grep "cis.image.sku") =~ $regex ]]; then
+            cisImageSku="${BASH_REMATCH[1]}"
+          else
+            exit 1
+          fi
+          
+          imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
+          
+          entitledRG=${{ env.testResourceGroup }}-entitled
+          az group create -n $entitledRG -l ${{ env.location }}
+          
+          az deployment group create --resource-group $entitledRG --name testDeployment \
+            --template-file ${{ env.offerName }}/twas-base-cis/test/mainTemplate.json \
+            --parameters deploymentMode=Entitled ibmUserId=${{ env.entitledIbmUserId }} ibmUserPwd=${{ env.entitledIbmPassword }} \
+              imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
+              cisImagePublisher=$cisImagePublisher cisImageOffer=$cisImageOffer cisImageSku=$cisImageSku \
+              scriptLocation=${{ env.scriptLocation }}
       - name: Extract VHD files from the VM
         run: |
           # Take snapshots of the VM disks
@@ -255,26 +269,3 @@ jobs:
           az snapshot revoke-access --ids \
             $(az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.osDiskSnapshotName }} --query id -o tsv) \
             $(az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.dataDiskSnapshotName }} --query id -o tsv)
-      - name: Deploy a VM with entitled account
-        run: |
-          entitledRG=${{ env.testResourceGroup }}-entitled
-          az group create -n $entitledRG -l ${{ env.location }}
-          imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-
-          entitledVM=${{ env.vmName }}-entitled
-          customData="${{ env.entitledIbmUserId }} ${{ env.entitledIbmPassword }}"
-          az vm create \
-            --resource-group $entitledRG \
-            --name $entitledVM \
-            --image $imageResourceId \
-            --plan-name ${{ env.cisImageSku }} \
-            --plan-product ${{ env.cisImageOffer }} \
-            --plan-publisher ${{ env.cisImagePublisher }} \
-            --custom-data "$customData" \
-            --generate-ssh-keys
-
-          az vm extension set --name CustomScript \
-            --extension-instance-name check-vm \
-            --resource-group $entitledRG --vm-name $entitledVM \
-            --publisher Microsoft.Azure.Extensions --version 2.0 \
-            --settings "{\"fileUris\": [\"${{ env.scriptLocation }}check.sh\"], \"commandToExecute\":\"bash check.sh Entitled\"}"
