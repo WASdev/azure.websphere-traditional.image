@@ -110,10 +110,7 @@ jobs:
               --resource-group ${{ env.testResourceGroup }} \
               --name ${{ env.vmName }} -d \
               --query publicIps -o tsv)
-            echo "##[set-output name=publicIP;]${publicIP}"
-      - name: Create environment variable for VM
-        id: env-vm-ip
-        run: echo "publicIP=${{steps.query-vm-ip.outputs.publicIP}}" >> $GITHUB_ENV
+            echo "publicIP=${publicIP}" >> $GITHUB_ENV
       - name: Output installation log
         run: |
           echo "pubilc IP of VM: ${publicIP}"
