@@ -187,15 +187,17 @@ jobs:
           ibmUserIds=( ${{ env.entitledIbmUserId }} ${{ env.unEntitledIbmUserId }} "" )
           ibmUserPwds=( ${{ env.entitledIbmPassword }} ${{ env.unEntitledIbmPassword }} "" )
           for (( i=0; i<${#vmGroups[@]}; i++ )); do
-            entitledRG=${vmGroups[$i]}
-            az group create -n $entitledRG -l ${{ env.location }}
+            rgName=${vmGroups[$i]}
+            az group create -n $rgName -l ${{ env.location }}
             
-            az deployment group create --resource-group $entitledRG --name testDeployment \
+            az deployment group create --resource-group $rgName --name testDeployment \
               --template-file ${{ env.repoName }}/twas-base-cis/test/mainTemplate.json \
               --parameters deploymentMode=${deploymentModes[$i]} ibmUserId=${ibmUserIds[$i]} ibmUserPwd=${ibmUserPwds[$i]} \
                 imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
                 cisImagePublisher=$cisImagePublisher cisImageOffer=$cisImageOffer cisImageSku=$cisImageSku \
                 scriptLocation=${{ env.scriptLocation }}
+            
+            az group delete -n $rgName --yes
           done
       - name: Extract VHD files from the VM
         run: |
