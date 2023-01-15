@@ -5,9 +5,6 @@
         "_artifactsLocation": {
             "value": "${artifactsLocationBase}/twas-base-cis/src/main/"
         },
-        "dnsLabelPrefix":{
-            "value": "${dnsLabelPrefix}"
-        },
         "ibmUserId": {
             "value": "${ibmUserId}"
         },
