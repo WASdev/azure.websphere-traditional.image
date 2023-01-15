@@ -37,8 +37,6 @@ env:
   dataDiskSnapshotName: datadisk-backup
   osDiskVHDName: osdisk.vhd
   dataDiskVHDName: datadisk.vhd
-  osDiskName: osdisk
-  dataDiskName: datadisk
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-base-cis/test/
 
@@ -81,8 +79,8 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
       - name: Build azure-javaee-iaas
         run: mvn -DskipTests clean install --file azure-javaee-iaas/pom.xml
-      - uses: azure/login@v1
-        id: azure-login
+      - name: Azure login
+        uses: azure/login@v1
         with:
           creds: ${{ env.azureCredentials }}
       - name: Build ${{ env.repoName }}
@@ -100,7 +98,6 @@ jobs:
           chmod a+x deploy.azcli
           ./deploy.azcli -n testDeployment -g ${{ env.testResourceGroup }} -l ${{ env.location }}
       - name: Query public IP of VM
-        id: query-vm-ip
         uses: azure/CLI@v1
         with:
           azcliversion: ${{ env.azCliVersion }}
@@ -204,7 +201,7 @@ jobs:
           # Take snapshots of the VM disks
           osDiskId=$(az vm show \
             -g ${{ env.testResourceGroup }} \
-            -n  ${{ env.vmName }} \
+            -n ${{ env.vmName }} \
             --query "storageProfile.osDisk.managedDisk.id" \
             -o tsv)
           az snapshot create \
@@ -213,7 +210,7 @@ jobs:
             --name ${{ env.osDiskSnapshotName }}
           dataDiskId=$(az vm show \
             -g ${{ env.testResourceGroup }} \
-            -n  ${{ env.vmName }} \
+            -n ${{ env.vmName }} \
             --query "storageProfile.dataDisks[0].managedDisk.id" \
             -o tsv)
           az snapshot create \
@@ -275,3 +272,52 @@ jobs:
           az snapshot revoke-access --ids \
             $(az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.osDiskSnapshotName }} --query id -o tsv) \
             $(az snapshot show -g ${{ env.testResourceGroup }} -n ${{ env.dataDiskSnapshotName }} --query id -o tsv)
+      - name: Clean up resources but vhd storage account
+        uses: azure/CLI@v1
+        with:
+          azcliversion: ${{ env.azCliVersion }}
+          inlineScript: |
+            az image delete --ids \
+              $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
+            az vm delete --yes --ids \
+              $(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
+            az network nic delete --ids \
+              $(az network nic list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network vnet delete --ids \
+              $(az network vnet list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network public-ip delete --ids \
+              $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network nsg delete --ids \
+              $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az snapshot delete -g ${{ env.testResourceGroup }} -n ${{ env.osDiskSnapshotName }}
+            az snapshot delete -g ${{ env.testResourceGroup }} -n ${{ env.dataDiskSnapshotName }}
+            az disk delete --yes --ids \
+              $(az disk list -g ${{ env.testResourceGroup }} | jq -r 'map(.id) | join(" ")')
+      - name: Generate SAS url
+        run: |
+          # Get a minus-24-hour date and a plus-30-day date for the SAS token
+          minus24HoursUtc=$(date -u --date "$dte -24 hour" +%Y-%m-%dT%H:%MZ)
+          plus30DaysUtc=$(date -u --date "$dte 30 day" +%Y-%m-%dT%H:%MZ)
+
+          vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
+          sasToken=$(az storage container generate-sas \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --name ${{ env.containerName }} --permissions rl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
+          blobStorageEndpoint=$( az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob' )
+          osDiskSasUrl=${blobStorageEndpoint}${{ env.containerName }}/${{ env.osDiskVHDName }}?$sasToken
+          dataDiskSasUrl=${blobStorageEndpoint}${{ env.containerName }}/${{ env.dataDiskVHDName }}?$sasToken
+          
+          echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url.txt
+      - name: Upload sas-url.txt
+        uses: actions/upload-artifact@v2
+        with:
+          name: sasurl
+          path: sas-url.txt
+  summary:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download sas-url.txt
+        uses: actions/download-artifact@v2
+        with:
+          name: sasurl
