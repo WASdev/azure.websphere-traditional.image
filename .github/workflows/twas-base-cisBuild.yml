@@ -152,12 +152,12 @@ jobs:
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
           sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
-      - name: Generate image after deallocating and generalizing the VM
+      - name: Generate the image
         run: |
           az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }}
-      - name: Deploy a VM with entitled account
+      - name: Verify the image
         run: |
           # Retrieve CIS image info
           regex="^cis\.image\.publisher=(.*)"
@@ -181,15 +181,22 @@ jobs:
           
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
           
-          entitledRG=${{ env.testResourceGroup }}-entitled
-          az group create -n $entitledRG -l ${{ env.location }}
-          
-          az deployment group create --resource-group $entitledRG --name testDeployment \
-            --template-file ${{ env.repoName }}/twas-base-cis/test/mainTemplate.json \
-            --parameters deploymentMode=Entitled ibmUserId=${{ env.entitledIbmUserId }} ibmUserPwd=${{ env.entitledIbmPassword }} \
-              imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
-              cisImagePublisher=$cisImagePublisher cisImageOffer=$cisImageOffer cisImageSku=$cisImageSku \
-              scriptLocation=${{ env.scriptLocation }}
+          # Deploy VMs using different IBMids and verify installation
+          vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
+          deploymentModes=( Entitled Unentitled Evaluation )
+          ibmUserIds=( ${{ env.entitledIbmUserId }} ${{ env.unEntitledIbmUserId }} "" )
+          ibmUserPwds=( ${{ env.entitledIbmPassword }} ${{ env.unEntitledIbmPassword }} "" )
+          for (( i=0; i<${#vmGroups[@]}; i++ )); do
+            entitledRG=${vmGroups[$i]}
+            az group create -n $entitledRG -l ${{ env.location }}
+            
+            az deployment group create --resource-group $entitledRG --name testDeployment \
+              --template-file ${{ env.repoName }}/twas-base-cis/test/mainTemplate.json \
+              --parameters deploymentMode=${deploymentModes[$i]} ibmUserId=${ibmUserIds[$i]} ibmUserPwd=${ibmUserPwds[$i]} \
+                imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
+                cisImagePublisher=$cisImagePublisher cisImageOffer=$cisImageOffer cisImageSku=$cisImageSku \
+                scriptLocation=${{ env.scriptLocation }}
+          done
       - name: Extract VHD files from the VM
         run: |
           # Take snapshots of the VM disks
