@@ -307,17 +307,17 @@ jobs:
           osDiskSasUrl=${blobStorageEndpoint}${{ env.containerName }}/${{ env.osDiskVHDName }}?$sasToken
           dataDiskSasUrl=${blobStorageEndpoint}${{ env.containerName }}/${{ env.dataDiskVHDName }}?$sasToken
           
-          echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url.txt
-      - name: Upload sas-url.txt
+          echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url-twasnd-cis.txt
+      - name: Upload SAS url
         uses: actions/upload-artifact@v3
         with:
-          name: sasurl
-          path: sas-url.txt
+          name: sasurl-twasnd-cis
+          path: sas-url-twasnd-cis.txt
   summary:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download sas-url.txt
+      - name: Download SAS url
         uses: actions/download-artifact@v3
         with:
-          name: sasurl
+          name: sasurl-twasnd-cis
