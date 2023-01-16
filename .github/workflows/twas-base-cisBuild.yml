@@ -26,7 +26,6 @@ env:
   entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
   unEntitledIbmUserId: ${{ secrets.UNENTITLED_IBM_USER_ID }}
   unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
-  msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
   testResourceGroup: twasBaseCISImageTest${{ github.run_id }}${{ github.run_number }}
