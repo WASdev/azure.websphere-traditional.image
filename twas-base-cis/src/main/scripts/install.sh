@@ -30,7 +30,7 @@ output=$(df -h)
 while echo $output | grep -qv "/datadrive"
 do
     sleep 10
-    echo "Waiting for data disk partition & moute complete..."
+    echo "Waiting for data disk partition & mount complete..."
     output=$(df -h)
 done
 name=$(df -h | grep "/datadrive" | awk '{print $1;}' | grep -Po "(?<=\/dev\/).*")
