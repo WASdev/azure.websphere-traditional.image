@@ -193,6 +193,8 @@ jobs:
                 imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
                 cisImagePublisher=$cisImagePublisher cisImageOffer=$cisImageOffer cisImageSku=$cisImageSku \
                 scriptLocation=${{ env.scriptLocation }}
+            
+            az group delete -n $rgName --yes
           done
       - name: Extract VHD files from the VM
         run: |
