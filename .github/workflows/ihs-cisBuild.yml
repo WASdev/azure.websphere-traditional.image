@@ -117,14 +117,6 @@ jobs:
           echo "Output stdout:"
           result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
           echo "$result"
-      - name: Install cifs-utils
-        run: |
-          echo "pubilc IP of VM: ${publicIP}"
-          echo "yum update starts"
-          echo install sshpass
-          sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo  -S yum install cifs-utils -y'
       - name: Update applications
         run: |
           echo "pubilc IP of VM: ${publicIP}"

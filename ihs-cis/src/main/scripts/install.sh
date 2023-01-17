@@ -45,6 +45,11 @@ mv virtualimage.properties /datadrive
 # Get installation properties
 source /datadrive/virtualimage.properties
 
+# Install required packages
+yum install firewalld -y
+systemctl enable firewalld
+yum install cifs-utils -y
+
 # Create installation directories
 mkdir -p ${IM_INSTALL_DIRECTORY} && mkdir -p ${IM_SHARED_DIRECTORY} \
     && mkdir -p ${IHS_INSTALL_DIRECTORY} && mkdir -p ${PLUGIN_INSTALL_DIRECTORY} && mkdir -p ${WCT_INSTALL_DIRECTORY}

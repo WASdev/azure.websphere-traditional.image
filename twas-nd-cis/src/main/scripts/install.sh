@@ -45,6 +45,12 @@ mv virtualimage.properties /datadrive
 # Get tWAS installation properties
 source /datadrive/virtualimage.properties
 
+# Install required packages
+yum install firewalld -y
+systemctl enable firewalld
+yum install cifs-utils -y
+yum install libXaw -y
+
 # Install BigFix client
 setenforce 0
 wget -O "$BES_AGENT_RPM" "$BES_AGENT_RPM_URL" -q
