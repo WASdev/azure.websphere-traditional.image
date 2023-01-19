@@ -266,7 +266,7 @@ jobs:
         with:
           name: sasurl
       - name: summarize jobs
-        if: always()
+        if: ${{ env.msTeamsWebhook != 'NA' }}
         run: |
             workflow_jobs=$(curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}/jobs)
 
