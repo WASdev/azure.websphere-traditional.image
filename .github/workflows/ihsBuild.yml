@@ -270,9 +270,11 @@ jobs:
         run: |
             workflow_jobs=$(curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}/jobs)
 
-            success_build_job=$(echo $workflow_jobs | jq '.jobs | map(select(.name=="build" and .conclusion=="success")) | length')
+            success_build_job=$(echo $workflow_jobs | jq 'select(.jobs != null) | .jobs | map(select(.name=="build" and .conclusion=="success")) | length')
             echo "$success_build_job"
-            if (($success_build_job == 0));then
+            if [ -z $success_build_job ];then
+              echo "jobs not retrieved."
+            elif (($success_build_job == 0));then
                 echo "Job failed, send notification to Teams"
                 curl ${{ env.msTeamsWebhook }} \
                 -H 'Content-Type: application/json' \
