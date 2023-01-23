@@ -3,4 +3,3 @@
 # [Deploy an Azure VM with RHEL 8.4, IBM WebSphere Application Server ND Traditional V9.0.5 & IBM JDK 8.0 pre-installed](/twas-nd)
 # [Related: Deploy RHEL 8.4 VMs on Azure with IBM WebSphere Application Server ND Traditional V9.0.5 cluster pre-installed](https://github.com/WASdev/azure.websphere-traditional.cluster)
 # [Related: Deploy RHEL 8.4 VM on Azure with IBM WebSphere Application Server traditional V9.0.5 single server pre-installed](https://github.com/WASdev/azure.websphere-traditional.singleserver)
-# [Issues](https://github.com/WASdev/azure.websphere-traditional.cluster/issues)

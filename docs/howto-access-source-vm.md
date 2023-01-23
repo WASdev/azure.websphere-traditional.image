@@ -1,6 +1,6 @@
 # How to access the source VM when image build CI/CD failed
 
-Normally, the image build CICD ([ihs CICD](../.github/workflows/ihsBuild.yml), [twas-base CICD](../.github/workflows/twas-baseBuild.yml) and [twas-nd CICD](../.github/workflows/twas-ndBuild.yml)) workflow will provision the source VM, install software package, execute integration test and finally generate SAS urls for OS disk and data disk which will be used for creating/updating Azure virtual machine offer(s) in Azure Partner Center. 
+Normally, the image build CICD ([ihs CICD](../.github/workflows/ihsBuild.yml), [twas-base CICD](../.github/workflows/twas-baseBuild.yml), [twas-nd CICD](../.github/workflows/twas-ndBuild.yml), [ihs-cis CICD](../.github/workflows/ihs-cisBuild.yml), [twas-base-cis CICD](../.github/workflows/twas-base-cisBuild.yml) and [twas-nd-cis CICD](../.github/workflows/twas-nd-cisBuild.yml)) workflow will provision the source VM, install software package, execute integration test and finally generate SAS urls for OS disk and data disk which will be used for creating/updating Azure virtual machine offer(s) in Azure Partner Center. 
 
 However, if the CICD workflow failed at step of installing software package due to unknown issues, user usually needs to access the source VM to triage the issue, and/or collect logs for issue reporting. Here're instructions on how to access the source VM.
 
@@ -40,16 +40,19 @@ Follow steps below to connect to the source VM and inspect the issue.
        * `IM_INSTALL_DIRECTORY` is the directory where IBM Installation Manager is installed.
        * Export IBM Installation Manager installation data: `${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl exportinstalldata imagent.zip`
 
-       For `twas-nd CICD`:
+       For `twas-nd CICD` and `twas-nd-cis CICD`:
        * `WAS_ND_INSTALL_DIRECTORY` is the directory where IBM WebSphere Application Server Network Deployment is installed.
 
-       For `twas-base CICD`:
+       For `twas-base CICD` and `twas-base-cis CICD`:
        * `WAS_BASE_INSTALL_DIRECTORY` is the directory where IBM WebSphere Application Server is installed.
 
-       For `ihs CICD`:
+       For `ihs CICD` and `ihs-cis CICD`:
        * `IHS_INSTALL_DIRECTORY` is the directory where IBM HTTP Server is installed.
        * `PLUGIN_INSTALL_DIRECTORY` is the directory where Web Server Plug-ins for IBM WebSphere Application Server is installed.
        * `WCT_INSTALL_DIRECTORY` is the directory where WebSphere Customization Toolbox is installed
+
+    1. For `twas-nd-cis CICD` and `twas-base-cis CICD`:
+       * `/opt/BESClient` is the directory where BigFix client is installed.
 
     1. Change directory to the working directory of VM extension execution.
        ```bash
@@ -59,13 +62,14 @@ Follow steps below to connect to the source VM and inspect the issue.
     1. List all files.
        ```bash
        ls
-       agent.installer.linux.gtk.x86_64.zip  im_installer  install.sh  stderr  stdout
+       BESAgent-10.0.8.37-rhe6.x86_64.rpm agent.installer.linux.gtk.x86_64.zip im_installer  install.sh  stderr  stdout
        ```
 
        Note:
        * `install.sh` is the script responsible for installing software packages.
        * `stdout` is the log file including text output sent from the shell commands in `install.sh`.
        * `stderr` is the log file including error messages sent from the shell commands in `install.sh`.
+       * `BESAgent-10.0.8.37-rhe6.x86_64.rpm` is the BigFix client RPM downloaded for `twas-nd-cis CICD` and `twas-base-cis CICD`.
 
 ## Clean up
 

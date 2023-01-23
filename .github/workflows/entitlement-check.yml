@@ -80,13 +80,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: send notification
-        if: always()
+        if: ${{ env.msTeamsWebhook != 'NA' }}
         run: |
             workflow_jobs=$(curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}/jobs)
 
-            success_check_job=$(echo $workflow_jobs | jq '.jobs | map(select(.name=="check" and .conclusion=="success")) | length')
+            success_check_job=$(echo $workflow_jobs | jq 'select(.jobs != null) | .jobs | map(select(.name=="check" and .conclusion=="success")) | length')
             echo "$success_check_job"
-            if (($success_check_job == 0));then
+            if [ -z $success_check_job ];then
+              echo "jobs not retrieved."
+            elif (($success_check_job == 0));then
                 echo "Entitlement check job failed, send notification to Teams."
                 curl ${{ env.msTeamsWebhook }} \
                 -H 'Content-Type: application/json' \

@@ -45,13 +45,27 @@ mv virtualimage.properties /datadrive
 # Get tWAS installation properties
 source /datadrive/virtualimage.properties
 
+# Install required packages
+yum install firewalld -y
+systemctl enable firewalld
+yum install cifs-utils -y
+yum install libXaw -y
+
+# Install BigFix client
+setenforce 0
+wget -O "$BES_AGENT_RPM" "$BES_AGENT_RPM_URL" -q
+rpm --import $GPG_RPM_PUBLIC_KEY_URL
+rpm -ivh $BES_AGENT_RPM
+
 # Create installation directories
 mkdir -p ${IM_INSTALL_DIRECTORY} && mkdir -p ${WAS_ND_INSTALL_DIRECTORY} && mkdir -p ${IM_SHARED_DIRECTORY}
 
 # Install IBM Installation Manager
 wget -O "$IM_INSTALL_KIT" "$IM_INSTALL_KIT_URL" -q
 mkdir im_installer
+yum install unzip -y
 unzip -q "$IM_INSTALL_KIT" -d im_installer
+yum remove unzip -y
 chmod -R 755 ./im_installer/*
 ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
