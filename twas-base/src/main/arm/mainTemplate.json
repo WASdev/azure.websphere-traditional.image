@@ -15,6 +15,7 @@
             "defaultValue": "[resourceGroup().location]"
         },
         "dnsLabelPrefix": {
+            "defaultValue": "was",
             "type": "string"
         },
         "vmSize": {

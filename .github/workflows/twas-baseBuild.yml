@@ -1,5 +1,3 @@
-# This is a basic workflow to help you get started with Actions
-
 name: twas-base CICD
 
 # Controls when the action will run. 
@@ -19,92 +17,79 @@ on:
   # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-all"}'
 
 env:
-  # Latest version is at https://github.com/Azure/azure-cli/releases
-  azCliVersion: 2.31.0
-  # Commit hash from https://github.com/Azure/azure-javaee-iaas/commits/main
-  ref_javaee: 13fe6ec487024eb61355d661ab5700ae90cb0a8f
-  # Commit hash from https://github.com/Azure/arm-ttk/commits/master
-  ref_armttk: cf5c927eaf1f5652556e86a6b67816fc910d1b74
-  offerName: azure.websphere-traditional.image
+  repoName: azure.websphere-traditional.image
   userName: ${{ secrets.USER_NAME }}
   azureCredentials: ${{ secrets.AZURE_CREDENTIALS }}
-  unEntitledIbmUserId: ${{ secrets.UNENTITLED_IBM_USER_ID }}
-  unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   entitledIbmUserId: ${{ secrets.ENTITLED_IBM_USER_ID }}
   entitledIbmPassword: ${{ secrets.ENTITLED_IBM_USER_PWD }}
-  vmName: twasbase${{ github.run_id }}${{ github.run_number }}
+  unEntitledIbmUserId: ${{ secrets.UNENTITLED_IBM_USER_ID }}
+  unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
-  testResourceGroup: imageTest${{ github.run_id }}${{ github.run_number }}
+  testResourceGroup: twasBaseImageTest${{ github.run_id }}${{ github.run_number }}
+  vmName: vm${{ github.run_id }}${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
-  msTeamsWebhook: ${{ secrets.MSTEAMS_WEBHOOK }}
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-base/test/
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: Get versions of external dependencies
+        run: |
+          curl -Lo external-deps-versions.properties https://raw.githubusercontent.com/Azure/azure-javaee-iaas/main/external-deps-versions.properties
+          source external-deps-versions.properties
+          echo "azCliVersion=${AZ_CLI_VERSION}" >> $GITHUB_ENV
+          echo "refArmttk=${ARM_TTK_REFERENCE}" >> $GITHUB_ENV
+          echo "refJavaee=${AZURE_JAVAEE_IAAS_REFERENCE}" >> $GITHUB_ENV
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'microsoft'
+          java-version: '11'
       - name: Checkout azure-javaee-iaas
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: Azure/azure-javaee-iaas
           path: azure-javaee-iaas
-          ref: ${{ env.ref_javaee }}
-
+          ref: ${{ env.refJavaee }}
       - name: Checkout arm-ttk
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: Azure/arm-ttk
           path: arm-ttk
-          ref: ${{ env.ref_armttk }}
-      # Checks-out your repository `under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+          ref: ${{ env.refArmttk }}
+      - name: Checkout ${{ env.repoName }}
+        uses: actions/checkout@v3
         with:
-          path: ${{ env.offerName }}
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
+          path: ${{ env.repoName }}
+          ref: ${{ github.event.inputs.ref }}
       - name: Build azure-javaee-iaas
         run: mvn -DskipTests clean install --file azure-javaee-iaas/pom.xml
-      - name: Build and test
-        run: |
-          echo "Branch name is $GITHUB_REF_NAME"
-          mvn -Dgit.repo=${{ env.userName }} -Dgit.tag=$GITHUB_REF_NAME -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} -DdnsLabelPrefix=wsp -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk clean install --file ${{ env.offerName }}/twas-base/pom.xml
-      - uses: azure/login@v1
-        id: azure-login
+      - name: Azure login
+        uses: azure/login@v1
         with:
           creds: ${{ env.azureCredentials }}
-      - name: Create image test resource group
+      - name: Build ${{ env.repoName }}
         run: |
-          az group create -l ${{ env.location }} -n ${{ env.testResourceGroup }}
-      - name: Run deployment script
+          echo "Branch name is $GITHUB_REF_NAME"
+          mvn -Dgit.repo=${{ env.userName }} -Dgit.tag=$GITHUB_REF_NAME \
+            -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} \
+            -DstorageAccount=${{ env.vhdStorageAccountName }} -DvmName=${{ env.vmName }} \
+            -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
+            -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
+            clean install --file ${{ env.repoName }}/twas-base/pom.xml
+      - name: Deploy a RHEL 8.x VM and install twas Base server
         run: |
-          cd ${{ env.offerName }}/twas-base/target/arm
-
-          #parameters JSON
-          parametersJson=$( cat ./parameters.json | jq '.parameters' )
-          parametersJson=$( echo "$parametersJson" | jq --arg storageAccount "${{ env.vhdStorageAccountName }}" '{"storageAccount": {"value":$storageAccount}} + .' )
-          parametersJson=$( echo "$parametersJson" | jq --arg vmName "${{ env.vmName }}" '{"vmName": {"value":$vmName}} + .' )
-
-          #Start deployment
-          echo "Starting deployment..."
-          (
-            az deployment group create --name ${{ github.run_id }}${{ github.run_number }} --resource-group ${{ env.testResourceGroup }} \
-              --template-file ./mainTemplate.json --parameters "$parametersJson"
-          )
-
-          if [[ $? -eq 0 ]]; then
-            echo "Template has been successfully deployed"
-          fi
+          cd ${{ env.repoName }}/twas-base/target/cli
+          chmod a+x deploy.azcli
+          ./deploy.azcli -n testDeployment -g ${{ env.testResourceGroup }} -l ${{ env.location }}
       - name: Query public IP of VM
-        id: query-vm-ip
         uses: azure/CLI@v1
         with:
           azcliversion: ${{ env.azCliVersion }}
@@ -114,186 +99,97 @@ jobs:
               --resource-group ${{ env.testResourceGroup }} \
               --name ${{ env.vmName }} -d \
               --query publicIps -o tsv)
-            echo "##[set-output name=publicIP;]${publicIP}"
-      - name: Create environment variable for VM
-        id: env-vm-ip
-        run: echo "wlsPublicIP=${{steps.query-vm-ip.outputs.publicIP}}" >> $GITHUB_ENV
+            echo "publicIP=${publicIP}" >> $GITHUB_ENV
       - name: Output installation log
         run: |
-          echo "pubilc IP of VM: ${wlsPublicIP}"
-          echo install sshpass
           sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
           echo "Output stdout:"
-          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
+          result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
           echo "$result"
       - name: Install cifs-utils
         run: |
-          echo "pubilc IP of VM: ${wlsPublicIP}"
-          echo "yum update starts"
-          echo install sshpass
           sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo  -S yum install cifs-utils -y'
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum install cifs-utils -y'
       - name: Update applications
         run: |
-          echo "pubilc IP of VM: ${wlsPublicIP}"
-          echo "yum update starts"
-          echo install sshpass
           sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
-      - name: Deprovision
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
+      - name: Deprovision the VM
         run: |
-          echo "pubilc IP of VM: ${wlsPublicIP}"
-          echo "Deprovision starts"
-          echo install sshpass
           sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${wlsPublicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${wlsPublicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
-      - name: Generate VM Image
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S waagent -deprovision+user -force'
+      - name: Generate the image
         run: |
-          # Update the access level of vhd container
-          vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
-          echo ${vhdStorageAccountAccessKey}
-          az storage container set-permission --account-name ${{ env.vhdStorageAccountName }} --account-key ${vhdStorageAccountAccessKey} --name vhds --public-access container
-          # Create the image
           az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }}
-      - name: Deploy VM using image with unentitled account
+      - name: Verify the image
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          cd ${{ env.offerName }}/twas-base/test
-          az deployment group create --resource-group ${{ env.testResourceGroup }} \
-              --name unentitled${{ github.run_id }}${{ github.run_number }} \
-              --template-file ./mainTemplate.json \
-              --parameters scriptLocation=${{ env.scriptLocation }} deploymentMode=Unentitled ibmUserId=${{ env.unEntitledIbmUserId }} ibmUserPwd=${{ env.unEntitledIbmPassword }} vmName=unentitled${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
-      - name: Deploy VM using image with entitled account
-        run: |
-          imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          cd ${{ env.offerName }}/twas-base/test
-          az deployment group create --resource-group ${{ env.testResourceGroup }} \
-              --name entitled${{ github.run_id }}${{ github.run_number }} \
-              --template-file ./mainTemplate.json \
-              --parameters scriptLocation=${{ env.scriptLocation }} deploymentMode=Entitled ibmUserId=${{ env.entitledIbmUserId }} ibmUserPwd=${{ env.entitledIbmPassword }} vmName=entitled${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
-      - name: Deploy VM using image for evaluation usage
-        run: |
-          imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          cd ${{ env.offerName }}/twas-base/test
-          az deployment group create --resource-group ${{ env.testResourceGroup }} \
-              --name evaluation${{ github.run_id }}${{ github.run_number }} \
-              --template-file ./mainTemplate.json \
-              --parameters scriptLocation=${{ env.scriptLocation }} deploymentMode=Evaluation ibmUserId="" ibmUserPwd="" vmName=evaluation${{ github.run_id }}${{ github.run_number }} vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} location=${{ env.location }} imageResourceId=$imageResourceId
-      - name: Generate SAS url
-        id: generate-sas-blob-url
-        run: |
-          #Get a minus-24-hour date for the SAS token
-          minus24HoursUtc=$(date -u --date "$dte -24 hour" +%Y-%m-%dT%H:%MZ)
-          echo $minus24HoursUtc
-
-          #Get a plus-30-day date for the SAS token
-          plus30DaysUtc=$(date -u --date "$dte 30 day" +%Y-%m-%dT%H:%MZ)
-          echo $plus30DaysUtc
-
-          vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
-          echo ${vhdStorageAccountAccessKey}
-
-          sasTokenForOffer=$(az storage container generate-sas --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" --name vhds --permissions rl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
-          echo $sasTokenForOffer
-
-          blobStorageEndpoint=$( az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob' )
-          echo $blobStorageEndpoint
-
-          osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasTokenForOffer
-          echo "osDiskSasUrl: ${osDiskSasUrl}"
-          dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasTokenForOffer
-          echo "dataDiskSasUrl: ${dataDiskSasUrl}"
           
-          echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url.txt
-          sasUrls=`cat sas-url.txt`
-          echo "sas-url: ${sasUrls}"
-      - name: Upload sas-url.txt
-        uses: actions/upload-artifact@v2
-        with:
-          name: sasurl
-          path: sas-url.txt
-
-      - name: Delete all resources but vhd storage account in the test resource group
-        id: delete-resources-in-group
-        if: always()
+          # Deploy VMs using different IBMids and verify installation
+          vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
+          deploymentModes=( Entitled Unentitled Evaluation )
+          ibmUserIds=( ${{ env.entitledIbmUserId }} ${{ env.unEntitledIbmUserId }} "" )
+          ibmUserPwds=( ${{ env.entitledIbmPassword }} ${{ env.unEntitledIbmPassword }} "" )
+          for (( i=0; i<${#vmGroups[@]}; i++ )); do
+            rgName=${vmGroups[$i]}
+            az group create -n $rgName -l ${{ env.location }}
+            
+            az deployment group create --resource-group $rgName --name testDeployment \
+              --template-file ${{ env.repoName }}/twas-base/test/mainTemplate.json \
+              --parameters deploymentMode=${deploymentModes[$i]} ibmUserId=${ibmUserIds[$i]} ibmUserPwd=${ibmUserPwds[$i]} \
+                imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
+                scriptLocation=${{ env.scriptLocation }}
+            
+            az group delete -n $rgName --yes
+          done
+      - name: Clean up all resources except for vhd storage account
         uses: azure/CLI@v1
         with:
           azcliversion: ${{ env.azCliVersion }}
           inlineScript: |
-            # Disks have to be deleted after the VM is deleted
-            unentitledOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name unentitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
-            echo "unentitledOsDiskId: ${unentitledOsDiskId}"
+            az image delete --ids \
+              $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
+            az vm delete --yes --ids \
+              $(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
+            az network nic delete --ids \
+              $(az network nic list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network vnet delete --ids \
+              $(az network vnet list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network public-ip delete --ids \
+              $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network nsg delete --ids \
+              $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+      - name: Generate SAS url
+        run: |
+          # Get a minus-24-hour date and a plus-30-day date for the SAS token
+          minus24HoursUtc=$(date -u --date "$dte -24 hour" +%Y-%m-%dT%H:%MZ)
+          plus30DaysUtc=$(date -u --date "$dte 30 day" +%Y-%m-%dT%H:%MZ)
 
-            unentitledDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name unentitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
-            echo "unentitledDataDiskIds: ${unentitledDataDiskIds}"
-
-            entitledOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name entitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
-            echo "entitledOsDiskId: ${entitledOsDiskId}"
-
-            entitledDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name entitled${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
-            echo "entitledDataDiskIds: ${entitledDataDiskIds}"
-
-            evaluationOsDiskId=$(az vm show --resource-group ${{ env.testResourceGroup }} --name evaluation${{ github.run_id }}${{ github.run_number }} --query "storageProfile.osDisk.managedDisk.id" -o tsv)
-            echo "evaluationOsDiskId: ${evaluationOsDiskId}"
-
-            evaluationDataDiskIds=$(az vm show --resource-group ${{ env.testResourceGroup }} --name evaluation${{ github.run_id }}${{ github.run_number }} --query "storageProfile.dataDisks" | jq -r 'map(.managedDisk.id) | join(" ")')
-            echo "evaluationDataDiskIds: ${evaluationDataDiskIds}"
-
-            vmForImage=$(az vm list --resource-group ${{ env.testResourceGroup }} --query "[?name=='${{ env.vmName }}']" | jq -r 'map(.id) | join(" ")')
-            echo $vmForImage
-
-            resourcesToDelete=$(az resource list --query "[?name!='${{ env.vhdStorageAccountName }}']" --resource-group ${{ env.testResourceGroup }} | jq -r 'map(.id) | join(" ")')
-            echo $resourcesToDelete
-
-            az vm delete --verbose --ids $vmForImage --yes
-            az resource delete --verbose --ids $resourcesToDelete
-            az disk delete --yes --resource-group ${{ env.testResourceGroup }} --ids ${unentitledOsDiskId} ${unentitledDataDiskIds} ${entitledOsDiskId} ${entitledDataDiskIds} ${evaluationOsDiskId} ${evaluationDataDiskIds}
+          vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
+          sasToken=$(az storage container generate-sas \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --name vhds --permissions rl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
+          blobStorageEndpoint=$( az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob' )
+          osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasToken
+          dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
+          
+          echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url-twasbase.txt
+      - name: Upload SAS url
+        uses: actions/upload-artifact@v3
+        with:
+          name: sasurl-twasbase
+          path: sas-url-twasbase.txt
   summary:
     needs: build
-    if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Download sas-url.txt
-        uses: actions/download-artifact@v2
+      - name: Download SAS url
+        uses: actions/download-artifact@v3
         with:
-          name: sasurl
-      - name: summarize jobs
-        if: ${{ env.msTeamsWebhook != 'NA' }}
-        run: |
-            workflow_jobs=$(curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}/jobs)
-
-            success_build_job=$(echo $workflow_jobs | jq 'select(.jobs != null) | .jobs | map(select(.name=="build" and .conclusion=="success")) | length')
-            echo "$success_build_job"
-            if [ -z $success_build_job ];then
-              echo "jobs not retrieved."
-            elif (($success_build_job == 0));then
-                echo "Job failed, send notification to Teams"
-                curl ${{ env.msTeamsWebhook }} \
-                -H 'Content-Type: application/json' \
-                --data-binary @- << EOF
-                {
-                "@context":"http://schema.org/extensions",
-                "@type":"MessageCard",
-                "text":"Workflow of repo 'azure.websphere-traditional.image/twas-base' failed, please take a look at: https://github.com/${{ env.userName }}/azure.websphere-traditional.image/actions/runs/${{ github.run_id }}"
-                }
-            EOF
-            else
-                echo "Job succeed, send notification to Teams"
-                sasUrls=`cat sas-url.txt`
-                echo ${sasUrls}
-                curl ${{ env.msTeamsWebhook }} \
-                -H 'Content-Type: application/json' \
-                --data-binary @- << EOF
-                {
-                "@context":"http://schema.org/extensions",
-                "@type":"MessageCard",
-                "text":"Workflow of repo 'azure.websphere-traditional.image/twas-base' succeeded, ${sasUrls}"
-                }
-            EOF
-            fi
+          name: sasurl-twasbase
