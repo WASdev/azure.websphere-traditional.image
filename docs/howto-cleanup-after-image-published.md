@@ -1,6 +1,6 @@
 # How to clean up the storage account with VHD files after image is published
 
-Normally, the image build CICD ([ihs CICD](../.github/workflows/ihsBuild.yml), [twas-base CICD](../.github/workflows/twas-baseBuild.yml), [twas-nd CICD](../.github/workflows/twas-ndBuild.yml), [ihs-cis CICD](../.github/workflows/ihs-cisBuild.yml), [twas-base-cis CICD](../.github/workflows/twas-base-cisBuild.yml) and [twas-nd-cis CICD](../.github/workflows/twas-nd-cisBuild.yml)) workflow will provision the source VM, install software package, execute integration test and finally generate SAS urls for OS disk and data disk VHD files which will be used for creating/updating Azure virtual machine offer(s) in Azure Partner Center. 
+Normally, the image build CICD ([ihs CICD](../.github/workflows/ihsBuild.yml), [twas-base CICD](../.github/workflows/twas-baseBuild.yml) and [twas-nd CICD](../.github/workflows/twas-ndBuild.yml)) workflow will provision the source VM, install software package, execute integration test and finally generate SAS urls for OS disk and data disk VHD files which will be used for creating/updating Azure virtual machine offer(s) in Azure Partner Center. 
 
 These VHD files are stored in a storage account in Azure, and you should get it deleted to reduce Azure cost **after image is successfully published and available in the Partner Center**.
 
