@@ -80,7 +80,6 @@ if $USE_GITHUB_CLI; then
     gh ${GH_FLAGS} secret remove ENTITLED_IBM_USER_PWD
     gh ${GH_FLAGS} secret remove UNENTITLED_IBM_USER_ID
     gh ${GH_FLAGS} secret remove UNENTITLED_IBM_USER_PWD
-    gh ${GH_FLAGS} secret remove MSTEAMS_WEBHOOK
     msg "${GREEN}Secrets removed"
   } || {
     USE_GITHUB_CLI=false
@@ -100,6 +99,5 @@ if [ $USE_GITHUB_CLI == false ]; then
   msg "${YELLOW}\"ENTITLED_IBM_USER_PWD\""
   msg "${YELLOW}\"UNENTITLED_IBM_USER_ID\""
   msg "${YELLOW}\"UNENTITLED_IBM_USER_PWD\""
-  msg "${YELLOW}\"MSTEAMS_WEBHOOK\""
   msg "${NOFORMAT}========================================================================"
 fi
