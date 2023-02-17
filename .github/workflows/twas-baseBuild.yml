@@ -100,23 +100,24 @@ jobs:
               --name ${{ env.vmName }} -d \
               --query publicIps -o tsv)
             echo "publicIP=${publicIP}" >> $GITHUB_ENV
-      - name: Output installation log
+      - name: Output installation log and copy openscap scanning reports
         run: |
           sudo apt-get install -y sshpass
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
           echo "Output stdout:"
           result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
           echo "$result"
-      - name: Install cifs-utils
-        run: |
-          sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum install cifs-utils -y'
-      - name: Update applications
-        run: |
-          sudo apt-get install -y sshpass
-          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
-          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
+          sshpass -p ${vmAdminPassword} scp ${vmAdminId}@${publicIP}:/tmp/scan_report_* .
+      - name: Upload openscap scanning report before remidation
+        uses: actions/upload-artifact@v3
+        with:
+          name: scan-report-before
+          path: scan_report_before.html
+      - name: Upload openscap scanning report after remidation
+        uses: actions/upload-artifact@v3
+        with:
+          name: scan-report-after
+          path: scan_report_after.html
       - name: Deprovision the VM
         run: |
           sudo apt-get install -y sshpass
@@ -193,3 +194,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: sasurl-twasbase
+      - name: Download openscap scanning report before remidation
+        uses: actions/download-artifact@v3
+        with:
+          name: scan-report-before
+      - name: Download openscap scanning report after remidation
+        uses: actions/download-artifact@v3
+        with:
+          name: scan-report-after
