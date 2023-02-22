@@ -107,7 +107,7 @@ jobs:
           echo "Output stdout:"
           result=$(sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S cat /var/lib/waagent/custom-script/download/0/stdout')
           echo "$result"
-          sshpass -p ${vmAdminPassword} scp ${vmAdminId}@${publicIP}:/tmp/scan_report_* .
+          sshpass -p ${vmAdminPassword} scp ${vmAdminId}@${publicIP}:/home/${vmAdminId}/scan_report_* .
       - name: Upload openscap scanning report before remidation
         uses: actions/upload-artifact@v3
         with:

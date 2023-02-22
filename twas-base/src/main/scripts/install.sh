@@ -142,7 +142,7 @@ oscap xccdf eval --remediate --profile xccdf_org.ssgproject.content_profile_cis_
 oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_cis_workstation_l1 --fetch-remote-resources \
     --results scan_results_after.xml --report scan_report_after.html \
     /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
-cp scan_report_* /tmp/
+cp scan_report_* /home/${admin}/
 
 # Remove openscap-scanner and security policies
 yum remove scap-security-guide -y -q
