@@ -51,6 +51,9 @@ Follow steps below to connect to the source VM and inspect the issue.
        * `PLUGIN_INSTALL_DIRECTORY` is the directory where Web Server Plug-ins for IBM WebSphere Application Server is installed.
        * `WCT_INSTALL_DIRECTORY` is the directory where WebSphere Customization Toolbox is installed
 
+       For `twas-nd CICD` and `twas-base CICD`:
+       * `/opt/BESClient` is the directory where BigFix client is installed.
+
     1. Change directory to the working directory of VM extension execution.
        ```bash
        cd /var/lib/waagent/custom-script/download/0/
@@ -59,13 +62,14 @@ Follow steps below to connect to the source VM and inspect the issue.
     1. List all files.
        ```bash
        ls
-       agent.installer.linux.gtk.x86_64.zip  im_installer  install.sh  stderr  stdout
+       BESAgent-10.0.8.37-rhe6.x86_64.rpm agent.installer.linux.gtk.x86_64.zip  im_installer  install.sh  stderr  stdout
        ```
 
        Note:
        * `install.sh` is the script responsible for installing software packages.
        * `stdout` is the log file including text output sent from the shell commands in `install.sh`.
        * `stderr` is the log file including error messages sent from the shell commands in `install.sh`.
+       * `BESAgent-10.0.8.37-rhe6.x86_64.rpm` is the BigFix client RPM downloaded for `twas-nd CICD` and `twas-base CICD`.
 
 ## Clean up
 
