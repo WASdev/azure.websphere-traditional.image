@@ -5,14 +5,17 @@
         "_artifactsLocation": {
             "value": "${artifactsLocationBase}/twas-base/src/main/"
         },
-        "dnsLabelPrefix":{
-            "value": "${dnsLabelPrefix}"
-        },
         "ibmUserId": {
             "value": "${ibmUserId}"
         },
         "ibmUserPwd": {
             "value": "${ibmUserPwd}"
+        },
+        "storageAccount": {
+            "value": "${storageAccount}"
+        },
+        "vmName": {
+            "value": "${vmName}"
         },
         "vmAdminId": {
             "value": "${vmAdminId}"

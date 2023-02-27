@@ -3,16 +3,19 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "_artifactsLocation": {
-            "value": "${artifactsLocationBase}/${project.artifactId}/${git.tag}/twas-nd/src/main/"
-        },
-        "dnsLabelPrefix":{
-            "value": "${dnsLabelPrefix}"
+            "value": "${artifactsLocationBase}/twas-nd/src/main/"
         },
         "ibmUserId": {
             "value": "${ibmUserId}"
         },
         "ibmUserPwd": {
             "value": "${ibmUserPwd}"
+        },
+        "storageAccount": {
+            "value": "${storageAccount}"
+        },
+        "vmName": {
+            "value": "${vmName}"
         },
         "vmAdminId": {
             "value": "${vmAdminId}"

@@ -57,3 +57,11 @@ elif [ -d ${WAS_BASE_INSTALL_DIRECTORY}/bin ]; then
 else
     echo "The installation is successfully removed for the unentitled user."
 fi
+
+# Check if BigFix client installation exists
+if [ -f /opt/BESClient/bin/BESClient ]; then
+    echo "The installation of BigFix client exists."
+else
+    echo "The installation of BigFix client doesn't exist."
+    exit 1
+fi

@@ -3,8 +3,8 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "type": "string",
-            "defaultValue": "[resourceGroup().location]"
+            "defaultValue": "[resourceGroup().location]",
+            "type": "string"
         },
         "deploymentMode": {
             "type": "string",
@@ -18,7 +18,7 @@
             "type": "string"
         },
         "dnsLabelPrefix": {
-            "defaultValue": "wsp",
+            "defaultValue": "was",
             "type": "string"
         },
         "ibmUserId": {
@@ -38,6 +38,7 @@
             "type": "string"
         },
         "vmName": {
+            "defaultValue": "[parameters('deploymentMode')]",
             "type": "string"
         },
         "addressPrefix": {
@@ -65,10 +66,9 @@
     },
     "variables": {
         "const_dnsLabelPrefix": "[concat(parameters('dnsLabelPrefix'), take(replace(parameters('guidValue'),'-',''),6))]",
-        "name_networkInterface": "[concat(variables('name_virtualMachine'), '-if')]",
+        "name_networkInterface": "[concat(parameters('vmName'), '-if')]",
         "name_networkSecurityGroup": "[concat(variables('const_dnsLabelPrefix'), '-nsg')]",
-        "name_publicIPAddress": "[concat(variables('name_virtualMachine'), '-ip')]",
-        "name_virtualMachine": "[parameters('vmName')]",
+        "name_publicIPAddress": "[concat(parameters('vmName'), '-ip')]",
         "name_virtualNetwork": "[concat(variables('const_dnsLabelPrefix'), '-vnet')]",
         "ref_networkInterface": "[resourceId('Microsoft.Network/networkInterfaces', variables('name_networkInterface'))]",
         "ref_networkSecurityGroup": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('name_networkSecurityGroup'))]",
@@ -179,7 +179,7 @@
         {
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2020-06-01",
-            "name": "[variables('name_virtualMachine')]",
+            "name": "[parameters('vmName')]",
             "location": "[parameters('location')]",
             "dependsOn": [
                 "[variables('ref_networkInterface')]"
@@ -194,7 +194,7 @@
                     }
                 },
                 "osProfile": {
-                    "computerName": "[variables('name_virtualMachine')]",
+                    "computerName": "[parameters('vmName')]",
                     "adminUsername": "[parameters('vmAdminId')]",
                     "adminPassword": "[parameters('vmAdminPwd')]",
                     "customData": "[base64(concat(parameters('ibmUserId'), ' ', parameters('ibmUserPwd')))]"
@@ -211,10 +211,10 @@
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "apiVersion": "2020-06-01",
-            "name": "[concat(variables('name_virtualMachine'), '/CustomScript')]",
+            "name": "[concat(parameters('vmName'), '/CustomScript')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines', variables('name_virtualMachine'))]"
+                "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
             ],
             "properties": {
                 "autoUpgradeMinorVersion": true,

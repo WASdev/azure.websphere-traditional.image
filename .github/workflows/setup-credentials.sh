@@ -39,8 +39,6 @@ ENTITLED_IBM_USER_PWD=
 UNENTITLED_IBM_USER_ID=
 # Password for unentitled IBMid
 UNENTITLED_IBM_USER_PWD=
-# Optional: Web hook for Microsoft Teams channel
-MSTEAMS_WEBHOOK=
 
 # End set environment variables
 ################################################
@@ -123,15 +121,6 @@ if [ "$UNENTITLED_IBM_USER_PWD" == '' ] ; then
     read -r -p "Enter password for unentitled IBMid: " UNENTITLED_IBM_USER_PWD
 fi
 
-# Optional: get MSTEAMS_WEBHOOK if not set at the beginning of this file
-if [ "$MSTEAMS_WEBHOOK" == '' ] ; then
-    read -r -p "[Optional] Enter Web hook for Microsoft Teams channel, or press 'Enter' to ignore: " MSTEAMS_WEBHOOK
-fi
-
-if [ -z "${MSTEAMS_WEBHOOK}" ] ; then
-    MSTEAMS_WEBHOOK=NA
-fi
-
 SERVICE_PRINCIPAL_NAME=${DISAMBIG_PREFIX}sp
 
 # Check AZ CLI status
@@ -187,7 +176,6 @@ if $USE_GITHUB_CLI; then
     gh ${GH_FLAGS} secret set ENTITLED_IBM_USER_PWD -b"${ENTITLED_IBM_USER_PWD}"
     gh ${GH_FLAGS} secret set UNENTITLED_IBM_USER_ID -b"${UNENTITLED_IBM_USER_ID}"
     gh ${GH_FLAGS} secret set UNENTITLED_IBM_USER_PWD -b"${UNENTITLED_IBM_USER_PWD}"
-    gh ${GH_FLAGS} secret set MSTEAMS_WEBHOOK -b"${MSTEAMS_WEBHOOK}"
     msg "${GREEN}Secrets configured"
   } || {
     USE_GITHUB_CLI=false
@@ -215,7 +203,5 @@ if [ $USE_GITHUB_CLI == false ]; then
   msg "${GREEN}${UNENTITLED_IBM_USER_ID}"
   msg "${YELLOW}\"UNENTITLED_IBM_USER_PWD\""
   msg "${GREEN}${UNENTITLED_IBM_USER_PWD}"
-  msg "${YELLOW}\"MSTEAMS_WEBHOOK\""
-  msg "${GREEN}${MSTEAMS_WEBHOOK}"
   msg "${NOFORMAT}========================================================================"
 fi
