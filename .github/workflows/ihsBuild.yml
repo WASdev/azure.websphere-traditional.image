@@ -84,7 +84,7 @@ jobs:
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
             clean install --file ${{ env.repoName }}/ihs/pom.xml
-      - name: Deploy a RHEL 8.x VM and install IHS server
+      - name: Deploy a RHEL 9.x VM and install IHS server
         run: |
           cd ${{ env.repoName }}/ihs/target/cli
           chmod a+x deploy.azcli

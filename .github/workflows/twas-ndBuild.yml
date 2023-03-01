@@ -84,7 +84,7 @@ jobs:
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
             clean install --file ${{ env.repoName }}/twas-nd/pom.xml
-      - name: Deploy a RHEL 8.x VM and install twas ND server
+      - name: Deploy a RHEL 9.x VM and install twas ND server
         run: |
           cd ${{ env.repoName }}/twas-nd/target/cli
           chmod a+x deploy.azcli
