@@ -31,7 +31,7 @@ env:
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/ihs/test/
-  oscapScriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/ihs/src/main/scripts/
+  oscapScriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/utilities/
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
