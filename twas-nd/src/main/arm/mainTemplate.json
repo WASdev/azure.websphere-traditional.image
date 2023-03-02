@@ -64,7 +64,7 @@
         }
     },
     "variables": {
-        "const_arguments": "[concat(' -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'),' -a ',parameters('vmAdminId'))]",
+        "const_arguments": "[concat(' -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]",
         "const_cloudInitScript": "#!/bin/bash
 disk=sda
 sudo parted /dev/${disk} --script mklabel gpt mkpart xfspart xfs 0% 100%
@@ -77,6 +77,12 @@ if [ $? -ne 0 ]; then
     fi
 fi
 sudo mkfs.xfs /dev/${disk}1
+while [ $? -ne 0 ]
+do
+    echo Device /dev/${disk}1 not ready
+    sleep 5
+    sudo mkfs.xfs /dev/${disk}1
+done
 sudo partprobe /dev/${disk}1
 sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
         "const_dnsLabelPrefix": "[concat(parameters('dnsLabelPrefix'), take(replace(parameters('guidValue'),'-',''),6))]",

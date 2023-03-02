@@ -31,6 +31,7 @@ env:
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-nd/test/
+  utilitiesLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/utilities/
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -84,7 +85,7 @@ jobs:
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
             clean install --file ${{ env.repoName }}/twas-nd/pom.xml
-      - name: Deploy a RHEL 8.x VM and install twas ND server
+      - name: Deploy a RHEL 9.x VM and install twas ND server
         run: |
           cd ${{ env.repoName }}/twas-nd/target/cli
           chmod a+x deploy.azcli
@@ -100,6 +101,19 @@ jobs:
               --name ${{ env.vmName }} -d \
               --query publicIps -o tsv)
             echo "publicIP=${publicIP}" >> $GITHUB_ENV
+      - name: Update the packages
+        run: |
+          sudo apt-get install -y sshpass
+          timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
+          sshpass -p ${{ env.vmAdminPassword }} -v ssh -p 22 -o StrictHostKeyChecking=no -o TCPKeepAlive=yes -o ServerAliveCountMax=20 -o ServerAliveInterval=15 -o ConnectTimeout=100 -v -tt ${{ env.vmAdminId }}@${publicIP} 'echo "${{ env.vmAdminPassword }}" | sudo -S yum update -y'
+      - name: Harden the VM using OpenSCAP tool
+        run: |
+          az vm extension set --name CustomScript \
+            --extension-instance-name apply-oscap-rules \
+            --resource-group ${{ env.testResourceGroup }} --vm-name ${{ env.vmName }} \
+            --publisher Microsoft.Azure.Extensions --version 2.0 \
+            --settings "{\"fileUris\": [\"${{ env.utilitiesLocation }}oscap.sh\"]}" \
+            --protected-settings "{\"commandToExecute\":\"bash oscap.sh ${{ env.vmAdminId }}\"}"
       - name: Output installation log and copy openscap scanning reports
         run: |
           sudo apt-get install -y sshpass
@@ -142,7 +156,7 @@ jobs:
             az group create -n $rgName -l ${{ env.location }}
             
             az deployment group create --resource-group $rgName --name testDeployment \
-              --template-file ${{ env.repoName }}/twas-nd/test/mainTemplate.json \
+              --template-file ${{ env.repoName }}/utilities/verifyTemplate.json \
               --parameters deploymentMode=${deploymentModes[$i]} ibmUserId=${ibmUserIds[$i]} ibmUserPwd=${ibmUserPwds[$i]} \
                 imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
                 scriptLocation=${{ env.scriptLocation }}
