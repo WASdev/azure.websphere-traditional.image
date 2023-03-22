@@ -1,0 +1,15 @@
+                                        
+========================================
+The VM is installed with the specified GNU/Linux distribution, IBM JDK version, and IBM HTTP Server for WebSphere Application Server version. 
+The relevant directories are as follows:
+* IHS_INSTALL_ROOT: /datadrive/IBM/WebSphere/IHS/V9
+* IHS_JAVA_HOME: ${IHS_INSTALL_ROOT}/java/8.0
+* PLUGINS_INSTALL_ROOT: /datadrive/IBM/WebSphere/Plugins/V9
+* PLUGINS_JAVA_HOME: ${PLUGINS_INSTALL_ROOT}/java/8.0
+* WCT_INSTALL_ROOT: /datadrive/IBM/WebSphere/Toolbox/V9
+* WCT_JAVA_HOME: ${WCT_INSTALL_ROOT}/java/8.0
+
+IBM HTTP Server for WebSphere Application Server is not pre-configured. 
+You need to do 'sudo -i' to get write access to the relevant directories for further configuration.
+========================================
+                                        

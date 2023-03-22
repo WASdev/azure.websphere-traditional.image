@@ -1,0 +1,11 @@
+                                        
+========================================
+The VM is installed with the specified GNU/Linux distribution, IBM JDK version, and WebSphere Application Server Base Deployment version.
+The relevant directories are as follows:
+* WAS_INSTALL_ROOT: /datadrive/IBM/WebSphere/Base/V9
+* JAVA_HOME: ${WAS_INSTALL_ROOT}/java/8.0
+
+The application server profile and server instance are not pre-created.
+You need to do 'sudo -i' to get write access to the relevant directories for further configuration.
+========================================
+                                        
