@@ -36,6 +36,12 @@ done
 name=$(df -h | grep "/datadrive" | awk '{print $1;}' | grep -Po "(?<=\/dev\/).*")
 echo "UUID=$(blkid | grep -Po "(?<=\/dev\/${name}\: UUID=\")[^\"]*(?=\".*)")   /datadrive   xfs   defaults,nofail   1   2" >> /etc/fstab
 
+# Move welcome message to /etc/motd.d and set appropriate permissions and SELinux context
+mv welcome.motd /etc/motd.d
+chmod 644 /etc/motd.d/welcome.motd
+semanage fcontext -a -t etc_t -s system_u /etc/motd.d/welcome.motd
+restorecon -vF /etc/motd.d/welcome.motd
+
 # Move tWAS entitlement check and application patch script to /var/lib/cloud/scripts/per-instance
 mv was-check.sh /var/lib/cloud/scripts/per-instance
 

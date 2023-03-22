@@ -286,7 +286,8 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
                     "fileUris": [
                         "[uri(variables('const_scriptLocation'), concat('install.sh', parameters('_artifactsLocationSasToken')))]",
                         "[uri(variables('const_scriptLocation'), concat('was-check.sh', parameters('_artifactsLocationSasToken')))]",
-                        "[uri(variables('const_scriptLocation'), concat('virtualimage.properties', parameters('_artifactsLocationSasToken')))]"
+                        "[uri(variables('const_scriptLocation'), concat('virtualimage.properties', parameters('_artifactsLocationSasToken')))]",
+                        "[uri(variables('const_scriptLocation'), concat('welcome.motd', parameters('_artifactsLocationSasToken')))]"
                     ],
                     "commandToExecute": "[concat('sh install.sh', variables('const_arguments'))]"
                 }
