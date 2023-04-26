@@ -183,7 +183,7 @@ jobs:
                 imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
                 scriptLocation=${{ env.scriptLocation }}
             
-            az group delete -n $rgName --yes
+            az group delete -n $rgName --yes --no-wait
           done
       - name: Clean up all resources except for vhd storage account
         uses: azure/CLI@v1
