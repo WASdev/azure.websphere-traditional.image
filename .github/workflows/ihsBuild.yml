@@ -4,6 +4,10 @@ name: ihs CICD
 on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      imageVersionNumber:
+        description: 'Must provide image version number'
+        required: true
   # Allows you to run this workflow using GitHub APIs
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
@@ -32,6 +36,15 @@ env:
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/ihs/test/
   utilitiesLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/utilities/
+  offerId: "2023-03-27-ihs-base-image"
+  planId: "2023-03-27-ihs-base-image"
+  offerType: "vm_image_offer"
+  clientId: ${{ secrets.CLIENT_ID }}
+  secretValue: ${{ secrets.SECRET_VALUE }}
+  tenantId: ${{ secrets.TENANT_ID }}
+  imageType: "x64Gen1"
+  operatingSystemFamily: "linux"
+  operatingSystemType: "redHat"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -48,6 +61,15 @@ jobs:
           echo "azCliVersion=${AZ_CLI_VERSION}" >> $GITHUB_ENV
           echo "refArmttk=${ARM_TTK_REFERENCE}" >> $GITHUB_ENV
           echo "refJavaee=${AZURE_JAVAEE_IAAS_REFERENCE}" >> $GITHUB_ENV
+      - name: Setup environment variables
+        id: setup-env-variables-based-on-dispatch-event
+        run: |
+          if [ ${{ github.event_name }} == 'workflow_dispatch' ]; then
+            imageVersionNumber=${{ github.event.inputs.imageVersionNumber }}
+          else
+            imageVersionNumber=${{ github.event.client_payload.imageVersionNumber }}
+          fi
+          echo "##[set-output name=imageVersionNumber;]${imageVersionNumber}"
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
@@ -181,6 +203,7 @@ jobs:
             az network nsg delete --ids \
               $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
       - name: Generate SAS url
+        id: sas_url
         run: |
           # Get a minus-24-hour date and a plus-30-day date for the SAS token
           minus24HoursUtc=$(date -u --date "$dte -24 hour" +%Y-%m-%dT%H:%MZ)
@@ -195,11 +218,30 @@ jobs:
           dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
           
           echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url-ihs.txt
+          echo "##[set-output name=osDiskSasUrl;]${osDiskSasUrl}"
+          echo "##[set-output name=dataDiskSasUrl;]${dataDiskSasUrl}"
       - name: Upload SAS url
         uses: actions/upload-artifact@v3
         with:
           name: sasurl-ihs
           path: sas-url-ihs.txt
+      - name: Update offer sas url and version
+        uses: microsoft/microsoft-partner-center-github-action@v2
+        if: ${{ github.repository_owner == 'WASdev' }}
+        with:
+          clientId: ${{ env.clientId }}
+          dataDiskSasUrl: ${{steps.sas_url.outputs.dataDiskSasUrl}}
+          imageType: ${{ env.imageType }}
+          imageVersionNumber: ${{ steps.setup-env-variables-based-on-dispatch-event.outputs.imageVersionNumber }}
+          offerId: ${{ env.offerId }}
+          offerType: ${{ env.offerType }}
+          operatingSystemFamily: ${{ env.operatingSystemFamily }}
+          operatingSystemType: ${{ env.operatingSystemType }}
+          osDiskSasUrl: ${{steps.sas_url.outputs.osDiskSasUrl}}
+          planId: ${{ env.planId }}
+          secretValue: ${{ env.secretValue }}
+          tenantId: ${{ env.tenantId }}
+          verbose: "true"
   summary:
     needs: build
     runs-on: ubuntu-latest
