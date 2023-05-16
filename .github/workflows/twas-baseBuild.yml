@@ -229,18 +229,18 @@ jobs:
         uses: microsoft/microsoft-partner-center-github-action@v3
         if: ${{ github.repository_owner == 'WASdev' }}
         with:
+          offerId: ${{ env.offerId }}
+          planId: ${{ env.planId }}
           clientId: ${{ env.clientId }}
-          dataDiskSasUrl: ${{steps.sas_url.outputs.dataDiskSasUrl}}
+          tenantId: ${{ env.tenantId }}
+          secretValue: ${{ env.secretValue }}
           imageType: ${{ env.imageType }}
           imageVersionNumber: ${{ steps.setup-env-variables-based-on-dispatch-event.outputs.imageVersionNumber }}
-          offerId: ${{ env.offerId }}
           offerType: ${{ env.offerType }}
           operatingSystemFamily: ${{ env.operatingSystemFamily }}
           operatingSystemType: ${{ env.operatingSystemType }}
           osDiskSasUrl: ${{steps.sas_url.outputs.osDiskSasUrl}}
-          planId: ${{ env.planId }}
-          secretValue: ${{ env.secretValue }}
-          tenantId: ${{ env.tenantId }}
+          dataDiskSasUrl: ${{steps.sas_url.outputs.dataDiskSasUrl}}
           verbose: "true"
   summary:
     needs: build
