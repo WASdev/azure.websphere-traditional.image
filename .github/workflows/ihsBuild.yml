@@ -227,7 +227,6 @@ jobs:
           path: sas-url-ihs.txt
       - name: Update offer sas url and version
         uses: microsoft/microsoft-partner-center-github-action@v3.1
-        if: ${{ github.repository_owner == 'WASdev' }} || ${{ github.repository_owner == 'azure-javaee' }}
         with:
           offerId: ${{ env.offerId }}
           planId: ${{ env.planId }}
