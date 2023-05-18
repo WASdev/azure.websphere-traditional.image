@@ -226,8 +226,7 @@ jobs:
           name: sasurl-twasnd
           path: sas-url-twasnd.txt
       - name: Update offer sas url and version
-        uses: microsoft/microsoft-partner-center-github-action@v3
-        if: ${{ github.repository_owner == 'WASdev' }}
+        uses: microsoft/microsoft-partner-center-github-action@v3.1
         with:
           offerId: ${{ env.offerId }}
           planId: ${{ env.planId }}
@@ -241,7 +240,7 @@ jobs:
           operatingSystemType: ${{ env.operatingSystemType }}
           osDiskSasUrl: ${{steps.sas_url.outputs.osDiskSasUrl}}
           dataDiskSasUrl: ${{steps.sas_url.outputs.dataDiskSasUrl}}
-          verbose: "true"
+          verbose: "false"
   summary:
     needs: build
     runs-on: ubuntu-latest
