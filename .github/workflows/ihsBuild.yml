@@ -240,7 +240,7 @@ jobs:
           operatingSystemType: ${{ env.operatingSystemType }}
           osDiskSasUrl: ${{steps.sas_url.outputs.osDiskSasUrl}}
           dataDiskSasUrl: ${{steps.sas_url.outputs.dataDiskSasUrl}}
-          verbose: "true"
+          verbose: "false"
   summary:
     needs: build
     runs-on: ubuntu-latest
