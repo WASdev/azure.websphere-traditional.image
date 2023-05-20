@@ -170,7 +170,8 @@ jobs:
       - name: Verify the image
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          
+          echo "imageResourceId=${imageResourceId}" >> $GITHUB_ENV
+
           # Deploy VMs using different IBMids and verify installation
           vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
           deploymentModes=( Entitled Unentitled Evaluation )
@@ -188,8 +189,9 @@ jobs:
             
             az group delete -n $rgName --yes --no-wait
           done
-
-          # Verify the image with twas-single integration-test pipeline
+      - name: Verify the image with twas-single integration-test pipeline
+        run: |
+          # Trigger the workflow run
           requestData={\"ref\":\"main\",\"inputs\":{\"databaseType\":\"none\",\"imageResourceId\":\"${imageResourceId}\"}}
           curl --verbose -L -X POST \
             -H "Accept: application/vnd.github+json" \
@@ -197,43 +199,56 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/workflows/integration-test.yaml/dispatches \
             -d $(echo $requestData | jq -c)
-          # Wait for the workflow run being created
-          sleep 60
-
-          workflowRunId=$(curl -L \
+          
+          # Wait until the workflow run starts
+          idAndStatus=$(curl -L \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${accessToken}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/workflows/integration-test.yaml/runs \
-            | jq '.workflow_runs[0].id')
+            | jq -r '.workflow_runs[0] | {id, status}')
+          status=$(echo $idAndStatus | jq -r '.status')
+          while [[ $status != queued ]]
+          do
+            echo "Wait until the workflow run starts..."
+            idAndStatus=$(curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${accessToken}"\
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/workflows/integration-test.yaml/runs \
+              | jq -r '.workflow_runs[0] | {id, status}')
+            status=$(echo $idAndStatus | jq -r '.status')
+            echo "The latest workflow run is ${idAndStatus}"
+          done
+          workflowRunId=$(echo $idAndStatus | jq '.id')
 
+          # Wait until the workflow run completes
           status=$(curl -L \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${accessToken}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/runs/$workflowRunId \
             | jq -r '.status')
-
           while [[ $status != completed ]]
           do
-              sleep 10
-              echo "Wait until the workflow run ${workflowRunId} completes..."
-              status=$(curl -L \
-                -H "Accept: application/vnd.github+json" \
-                -H "Authorization: Bearer ${accessToken}"\
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/runs/$workflowRunId \
-                | jq -r '.status')
-              echo "Workflow run ${workflowRunId} is ${status}"
+            sleep 10
+            echo "Wait until the workflow run ${workflowRunId} completes..."
+            status=$(curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${accessToken}"\
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/runs/$workflowRunId \
+              | jq -r '.status')
+            echo "Workflow run ${workflowRunId} is ${status}"
           done
-
+          
+          # Verify the workflow run result
           jobs=$(curl -L \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${accessToken}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/runs/$workflowRunId/jobs)
           successIntegTestJobCnt=$(echo $jobs | jq 'select(.jobs != null) | .jobs | map(select(.name=="integration-test" and .conclusion=="success")) | length')
-          
           if [[ $successIntegTestJobCnt != 1 ]]; then
             echo "twas-single integration test workflow run ${workflowRunId} failed."
             exit 1
