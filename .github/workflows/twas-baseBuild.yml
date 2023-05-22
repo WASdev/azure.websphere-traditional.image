@@ -300,15 +300,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download SAS url
-        uses: actions/download-artifact@v3
-        with:
-          name: sasurl-twasbase
-      - name: Download openscap scanning report before remidation
-        uses: actions/download-artifact@v3
-        with:
-          name: scan-report-before
-      - name: Download openscap scanning report after remidation
-        uses: actions/download-artifact@v3
-        with:
-          name: scan-report-after
+      - name: Output inputs from workflow_dispatch
+        run: echo "${{ toJSON(github.event.inputs) }}"
+      - name: Output client_payload from repository_dispatch
+        run: echo "${{ toJSON(github.event.client_payload) }}"
