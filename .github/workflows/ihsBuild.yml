@@ -37,6 +37,8 @@ env:
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/ihs/test/
   utilitiesLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/utilities/
+  accessToken: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+  twasClusterRepo: ${{ secrets.USER_NAME }}/azure.websphere-traditional.cluster
   offerId: "2023-03-27-ihs-base-image"
   planId: "2023-03-27-ihs-base-image"
   offerType: "vm_image_offer"
@@ -186,6 +188,54 @@ jobs:
             
             az group delete -n $rgName --yes --no-wait
           done
+
+          # Verify the image with twas-cluster integration-test pipeline
+          requestData={\"ref\":\"main\",\"inputs\":{\"databaseType\":\"none\",\"ndImageResourceId\":\"\",\"ihsImageResourceId\":\"${imageResourceId}\"}}
+          curl --verbose -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${accessToken}"\
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ env.twasClusterRepo }}/actions/workflows/integration-test.yaml/dispatches \
+            -d $(echo $requestData | jq -c)
+          # Wait for the workflow run being created
+          sleep 60
+          workflowRunId=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${accessToken}"\
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ env.twasClusterRepo }}/actions/workflows/integration-test.yaml/runs \
+            | jq '.workflow_runs[0].id')
+          status=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${accessToken}"\
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ env.twasClusterRepo }}/actions/runs/$workflowRunId \
+            | jq -r '.status')
+          while [[ $status != completed ]]
+          do
+              sleep 10
+              echo "Wait until the workflow run ${workflowRunId} completes..."
+              status=$(curl -L \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${accessToken}"\
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                https://api.github.com/repos/${{ env.twasClusterRepo }}/actions/runs/$workflowRunId \
+                | jq -r '.status')
+              echo "Workflow run ${workflowRunId} is ${status}"
+          done
+          jobs=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${accessToken}"\
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ env.twasClusterRepo }}/actions/runs/$workflowRunId/jobs)
+          successIntegTestJobCnt=$(echo $jobs | jq 'select(.jobs != null) | .jobs | map(select(.name=="integration-test" and .conclusion=="success")) | length')
+          
+          if [[ $successIntegTestJobCnt != 1 ]]; then
+            echo "twas-cluster integration test workflow run ${workflowRunId} failed."
+            exit 1
+          else
+            echo "twas-cluster integration test workflow run ${workflowRunId} succeeded."
+          fi
       - name: Clean up all resources except for vhd storage account
         uses: azure/CLI@v1
         with:
