@@ -231,7 +231,7 @@ jobs:
             | jq -r '.status')
           while [[ $status != completed ]]
           do
-            sleep 10
+            sleep 60
             echo "Wait until the workflow run ${workflowRunId} completes..."
             status=$(curl -L \
               -H "Accept: application/vnd.github+json" \
