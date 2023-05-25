@@ -11,14 +11,15 @@ on:
   # Allows you to run this workflow using GitHub APIs
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
-  # curl --verbose -XPOST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/twas-baseBuild.yml/dispatches --data '{"ref": "main", "inputs": {"imageVersionNumber": "9.0.20230428"}}'  
+  # curl --verbose -X POST -u "WASdev:${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/${REPO_NAME}/actions/workflows/twas-baseBuild.yml/dispatches --data '{"ref": "main", "inputs": {"imageVersionNumber": "9.0.20230428"}}'
   repository_dispatch:
     types: [integration-test-twasbase, integration-test-all]
   # sample request
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
-  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-twasbase"}'
-  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-all"}'
+  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-twasbase", "client_payload": {"imageVersionNumber": "9.0.20230428"}}'
+  # The integration-test-all event is used to run all integration tests (twas-base, twas-nd & ihs) in the repository with the same image version number.
+  # curl --verbose -X POST https://api.github.com/repos/${REPO_NAME}/dispatches -H "Accept: application/vnd.github.everest-preview+json" -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" --data '{"event_type": "integration-test-all", "client_payload": {"imageVersionNumber": "9.0.20230428"}}'
 
 env:
   repoName: azure.websphere-traditional.image
@@ -36,6 +37,8 @@ env:
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-base/test/
   utilitiesLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/utilities/
+  accessToken: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+  twasSingleRepo: ${{ secrets.USER_NAME }}/azure.websphere-traditional.singleserver
   offerId: "2023-03-27-twas-single-server-base-image"
   planId: "2023-03-27-twas-single-server-base-image"
   offerType: "vm_image_offer"
@@ -167,7 +170,8 @@ jobs:
       - name: Verify the image
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
-          
+          echo "imageResourceId=${imageResourceId}" >> $GITHUB_ENV
+
           # Deploy VMs using different IBMids and verify installation
           vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
           deploymentModes=( Entitled Unentitled Evaluation )
@@ -183,8 +187,74 @@ jobs:
                 imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
                 scriptLocation=${{ env.scriptLocation }}
             
-            az group delete -n $rgName --yes
+            az group delete -n $rgName --yes --no-wait
           done
+      - name: Verify the image with twas-single integration-test pipeline
+        run: |
+          # Trigger the workflow run
+          requestData={\"ref\":\"main\",\"inputs\":{\"databaseType\":\"none\",\"imageResourceId\":\"${imageResourceId}\"}}
+          curl --verbose -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${accessToken}"\
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/workflows/integration-test.yaml/dispatches \
+            -d $(echo $requestData | jq -c)
+          
+          # Wait until the workflow run starts
+          idAndStatus=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${accessToken}"\
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/workflows/integration-test.yaml/runs \
+            | jq -r '.workflow_runs[0] | {id, status}')
+          status=$(echo $idAndStatus | jq -r '.status')
+          while [[ $status != queued ]]
+          do
+            echo "Wait until the workflow run starts..."
+            idAndStatus=$(curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${accessToken}"\
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/workflows/integration-test.yaml/runs \
+              | jq -r '.workflow_runs[0] | {id, status}')
+            status=$(echo $idAndStatus | jq -r '.status')
+            echo "The latest workflow run is ${idAndStatus}"
+          done
+          workflowRunId=$(echo $idAndStatus | jq '.id')
+
+          # Wait until the workflow run completes
+          status=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${accessToken}"\
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/runs/$workflowRunId \
+            | jq -r '.status')
+          while [[ $status != completed ]]
+          do
+            sleep 60
+            echo "Wait until the workflow run ${workflowRunId} completes..."
+            status=$(curl -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${accessToken}"\
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/runs/$workflowRunId \
+              | jq -r '.status')
+            echo "Workflow run ${workflowRunId} is ${status}"
+          done
+          
+          # Verify the workflow run result
+          jobs=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${accessToken}"\
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ env.twasSingleRepo }}/actions/runs/$workflowRunId/jobs)
+          successIntegTestJobCnt=$(echo $jobs | jq 'select(.jobs != null) | .jobs | map(select(.name=="integration-test" and .conclusion=="success")) | length')
+          if [[ $successIntegTestJobCnt != 1 ]]; then
+            echo "twas-single integration test workflow run ${workflowRunId} failed."
+            exit 1
+          else
+            echo "twas-single integration test workflow run ${workflowRunId} succeeded."
+          fi
       - name: Clean up all resources except for vhd storage account
         uses: azure/CLI@v1
         with:
@@ -245,15 +315,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download SAS url
-        uses: actions/download-artifact@v3
-        with:
-          name: sasurl-twasbase
-      - name: Download openscap scanning report before remidation
-        uses: actions/download-artifact@v3
-        with:
-          name: scan-report-before
-      - name: Download openscap scanning report after remidation
-        uses: actions/download-artifact@v3
-        with:
-          name: scan-report-after
+      - name: Output inputs from workflow_dispatch
+        run: echo "${{ toJSON(github.event.inputs) }}"
+      - name: Output client_payload from repository_dispatch
+        run: echo "${{ toJSON(github.event.client_payload) }}"

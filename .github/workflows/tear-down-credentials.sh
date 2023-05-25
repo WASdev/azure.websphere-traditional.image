@@ -80,6 +80,10 @@ if $USE_GITHUB_CLI; then
     gh ${GH_FLAGS} secret remove ENTITLED_IBM_USER_PWD
     gh ${GH_FLAGS} secret remove UNENTITLED_IBM_USER_ID
     gh ${GH_FLAGS} secret remove UNENTITLED_IBM_USER_PWD
+    gh ${GH_FLAGS} secret remove PERSONAL_ACCESS_TOKEN
+    gh ${GH_FLAGS} secret remove CLIENT_ID
+    gh ${GH_FLAGS} secret remove SECRET_VALUE
+    gh ${GH_FLAGS} secret remove TENANT_ID
     msg "${GREEN}Secrets removed"
   } || {
     USE_GITHUB_CLI=false
@@ -99,5 +103,9 @@ if [ $USE_GITHUB_CLI == false ]; then
   msg "${YELLOW}\"ENTITLED_IBM_USER_PWD\""
   msg "${YELLOW}\"UNENTITLED_IBM_USER_ID\""
   msg "${YELLOW}\"UNENTITLED_IBM_USER_PWD\""
+  msg "${YELLOW}\"PERSONAL_ACCESS_TOKEN\""
+  msg "${YELLOW}\"CLIENT_ID\""
+  msg "${YELLOW}\"SECRET_VALUE\""
+  msg "${YELLOW}\"TENANT_ID\""
   msg "${NOFORMAT}========================================================================"
 fi

@@ -39,6 +39,14 @@ ENTITLED_IBM_USER_PWD=
 UNENTITLED_IBM_USER_ID=
 # Password for unentitled IBMid
 UNENTITLED_IBM_USER_PWD=
+# Personal access token for the GitHub account
+PERSONAL_ACCESS_TOKEN=
+# Client ID for an Azure AD application registered in the Partner Center
+CLIENT_ID=
+# Secret value of the Azure AD application registered in the Partner Center
+SECRET_VALUE=
+# Tenant ID of the Azure AD application registered in the Partner Center
+TENANT_ID=
 
 # End set environment variables
 ################################################
@@ -121,6 +129,26 @@ if [ "$UNENTITLED_IBM_USER_PWD" == '' ] ; then
     read -r -p "Enter password for unentitled IBMid: " UNENTITLED_IBM_USER_PWD
 fi
 
+# get PERSONAL_ACCESS_TOKEN if not set at the beginning of this file
+if [ "$PERSONAL_ACCESS_TOKEN" == '' ] ; then
+    read -r -p "Enter personal access token for the GitHub account: " PERSONAL_ACCESS_TOKEN
+fi
+
+# get CLIENT_ID if not set at the beginning of this file
+if [ "$CLIENT_ID" == '' ] ; then
+    read -r -p "Enter client ID for an Azure AD application registered in the Partner Center: " CLIENT_ID
+fi
+
+# get SECRET_VALUE if not set at the beginning of this file
+if [ "$SECRET_VALUE" == '' ] ; then
+    read -r -p "Enter secret value for the Azure AD application registered in the Partner Center: " SECRET_VALUE
+fi
+
+# get TENANT_ID if not set at the beginning of this file
+if [ "$TENANT_ID" == '' ] ; then
+    read -r -p "Enter tenant ID for the Azure AD application registered in the Partner Center: " TENANT_ID
+fi
+
 SERVICE_PRINCIPAL_NAME=${DISAMBIG_PREFIX}sp
 
 # Check AZ CLI status
@@ -176,6 +204,10 @@ if $USE_GITHUB_CLI; then
     gh ${GH_FLAGS} secret set ENTITLED_IBM_USER_PWD -b"${ENTITLED_IBM_USER_PWD}"
     gh ${GH_FLAGS} secret set UNENTITLED_IBM_USER_ID -b"${UNENTITLED_IBM_USER_ID}"
     gh ${GH_FLAGS} secret set UNENTITLED_IBM_USER_PWD -b"${UNENTITLED_IBM_USER_PWD}"
+    gh ${GH_FLAGS} secret set PERSONAL_ACCESS_TOKEN -b"${PERSONAL_ACCESS_TOKEN}"
+    gh ${GH_FLAGS} secret set CLIENT_ID -b"${CLIENT_ID}"
+    gh ${GH_FLAGS} secret set SECRET_VALUE -b"${SECRET_VALUE}"
+    gh ${GH_FLAGS} secret set TENANT_ID -b"${TENANT_ID}"
     msg "${GREEN}Secrets configured"
   } || {
     USE_GITHUB_CLI=false
@@ -203,5 +235,13 @@ if [ $USE_GITHUB_CLI == false ]; then
   msg "${GREEN}${UNENTITLED_IBM_USER_ID}"
   msg "${YELLOW}\"UNENTITLED_IBM_USER_PWD\""
   msg "${GREEN}${UNENTITLED_IBM_USER_PWD}"
+  msg "${YELLOW}\"PERSONAL_ACCESS_TOKEN\""
+  msg "${GREEN}${PERSONAL_ACCESS_TOKEN}"
+  msg "${YELLOW}\"CLIENT_ID\""
+  msg "${GREEN}${CLIENT_ID}"
+  msg "${YELLOW}\"SECRET_VALUE\""
+  msg "${GREEN}${SECRET_VALUE}"
+  msg "${YELLOW}\"TENANT_ID\""
+  msg "${GREEN}${TENANT_ID}"
   msg "${NOFORMAT}========================================================================"
 fi
