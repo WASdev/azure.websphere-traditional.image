@@ -153,7 +153,7 @@ The currently available offers are listed in the Learn More section at the botto
 
       * SAS URI
 
-         https://storage8602096754.blob.core.windows.net/vhds/was8602096754.vhd?st=2021-05-19T12%3A15Z&se=2021-06-19T12%3A15Z&sp=rl&sv=2018-11-09&sr=c&sig=K36h%2BvLlqZiVEAR2f7A07iWftZzg255IUx3foUqIjrc%3D
+         https://storage8602096754.blob.core.windows.net/vhds/was8602096754.vhd?st=2021-05-19T12%3A15Z&se=2021-06-19T12%3A15Z&sp=rl&sv=2018-11-09&sr=c&sig=redacted
 
 
       * Data disk number
@@ -162,7 +162,7 @@ The currently available offers are listed in the Learn More section at the botto
 
       * Data disk VHD link
 
-         https://storage8602096754.blob.core.windows.net/vhds/was8602096754datadisk1.vhd?st=2021-05-19T12%3A15Z&se=2021-06-19T12%3A15Z&sp=rl&sv=2018-11-09&sr=c&sig=K36h%2BvLlqZiVEAR2f7A07iWftZzg255IUx3foUqIjrc%3D
+         https://storage8602096754.blob.core.windows.net/vhds/was8602096754datadisk1.vhd?st=2021-05-19T12%3A15Z&se=2021-06-19T12%3A15Z&sp=rl&sv=2018-11-09&sr=c&sig=redacted
 
 # Co-sell with Microsoft
 

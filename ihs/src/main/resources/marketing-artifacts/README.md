@@ -143,7 +143,7 @@
    
       * SAS URI
       
-         osDiskSasUrl: https://storage9614936783.blob.core.windows.net/vhds/ihs9614936783.vhd?st=2021-06-21T17%3A59Z&se=2021-07-22T17%3A59Z&sp=rl&sv=2018-11-09&sr=c&sig=l66ULDcwhfWLKE7Nl8K79Un5D4n4I93//TyzqzHug6o%3D
+         osDiskSasUrl: https://storage9614936783.blob.core.windows.net/vhds/ihs9614936783.vhd?st=2021-06-21T17%3A59Z&se=2021-07-22T17%3A59Z&sp=rl&sv=2018-11-09&sr=c&sig=redacted
 
       * Data disk number
       
@@ -151,7 +151,7 @@
          
       * Data disk VHD link
       
-         dataDiskSasUrl: https://storage9614936783.blob.core.windows.net/vhds/ihs9614936783datadisk1.vhd?st=2021-06-21T17%3A59Z&se=2021-07-22T17%3A59Z&sp=rl&sv=2018-11-09&sr=c&sig=l66ULDcwhfWLKE7Nl8K79Un5D4n4I93//TyzqzHug6o%3D
+         dataDiskSasUrl: https://storage9614936783.blob.core.windows.net/vhds/ihs9614936783datadisk1.vhd?st=2021-06-21T17%3A59Z&se=2021-07-22T17%3A59Z&sp=rl&sv=2018-11-09&sr=c&sig=redacted
 
 # Co-sell with Microsoft
 
