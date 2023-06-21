@@ -65,7 +65,7 @@ Now that you have satisfied the preconditions **in this repository and related r
 <summary>Run the workflow to create the tWAS Base VM offer. [expand for details]</summary>
 
 1. Decide on a value for the `imageVersionNumber` parameter. The required syntax for this value is `9.0.YYYYMMDD`. Where `YYYYMMDD` is usually today's date.
-1. Visit the [GitHub Actions page for the workflow](https://github.com/azure-javaee/azure.websphere-traditional.image/actions/workflows/ihsBuild.yml).
+1. Visit the [GitHub Actions page for the workflow](https://github.com/WASdev/azure.websphere-traditional.image/actions/workflows/ihsBuild.yml).
 1. Select the **Run workflow** dropdown. Enter the value for `imageVersionNumber`.
 1. Select **Run workflow**.
 1. Observe the execution of the jobs in the workflow.
@@ -160,31 +160,41 @@ Because the workflow in the preceding section executed successfully, you can ass
 <details>
 <summary>The steps in this section describe how to run the workflows and publish the VM offers and Azure Application offer for WebSphere Application Server ND [expand for details]</summary>
 
-#### 1. Run the workflow for the ihs VM offer
+#### 1. Increment the version of ihs VM offer in the pom.xml
+
+1. Increment the version of `ihs/pom.xml`.
+1. Push the commit to the branch on which you intend to run the workflow in subsequent steps.
+
+#### 2. Increment the version of tWAS ND VM offer in the pom.xml
+
+1. Increment the version of `twas-nd/pom.xml`.
+1. Push the commit to the branch on which you intend to run the workflow in subsequent steps.
+
+#### 3. Run the workflow for the ihs VM offer
 
 <details>
 <summary>Run the workflow to create the IHS VM offer. [expand for details]</summary>
 
 1. Decide on a value for the `imageVersionNumber` parameter. The required syntax for this value is `9.0.YYYYMMDD`. Where `YYYYMMDD` is usually today's date.
-1. Visit the [GitHub Actions page for the workflow](https://github.com/azure-javaee/azure.websphere-traditional.image/actions/workflows/ihsBuild.yml).
+1. Visit the [GitHub Actions page for the workflow](https://github.com/WASdev/azure.websphere-traditional.image/actions/workflows/ihsBuild.yml).
 1. The remaining steps are the same as in the section **Run the workflow for the tWAS Base VM offer**.
 </details>
 
 If the workflow completes successfully, proceed to the next section. If not, troubleshoot and resolve the problem with guidance from the section on **The manual process** before proceeding.
 
-#### 2. Run the workflow for the tWAS ND VM offer
+#### 4. Run the workflow for the tWAS ND VM offer
 
 <details>
 <summary>Run the workflow to create the tWAS ND VM offer. [expand for details]</summary>
 
 1. Decide on a value for the `imageVersionNumber` parameter. The required syntax for this value is `9.0.YYYYMMDD`. Where `YYYYMMDD` is usually today's date.
-1. Visit the [GitHub Actions page for the workflow](https://github.com/azure-javaee/azure.websphere-traditional.image/actions/workflows/twas-ndBuild.yml).
+1. Visit the [GitHub Actions page for the workflow](https://github.com/WASdev/azure.websphere-traditional.image/actions/workflows/twas-ndBuild.yml).
 1. The remaining steps are the same as in the section **Run the workflow for the tWAS Base VM offer**.
 </details>
 
 If the workflow completes successfully, proceed to the next section. If not, troubleshoot and resolve the problem with guidance from the section on **The manual process** before proceeding.
 
-#### 3. Publish the offers in Partner Center
+#### 5. Publish the offers in Partner Center
 
 Because the workflows in the preceding sections executed successfully, you can assume the VM images are ready to publish in Partner Center.
 
@@ -219,7 +229,7 @@ Because the workflows in the preceding sections executed successfully, you can a
 
 
 
-#### 4. Update the source files in the tWAS ND (aka cluster) Azure Application offer
+#### 6. Update the source files in the tWAS ND (aka cluster) Azure Application offer
 
 At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offers have already been tested via CI/CD with the Azure Application offer, but the source code changes to publish a new iteration of the Azure Application offer have not been updated. The steps is this section show how to update the source files to use the new VM offer.
 
@@ -231,7 +241,7 @@ At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offer
 1. Push the commit to the branch on which you intend to run the workflow in the next step.
 
 
-#### 5. Run the workflow for the tWAS ND (aka cluster) Azure Application offer
+#### 7. Run the workflow for the tWAS ND (aka cluster) Azure Application offer
 
  You can publish the corresponding Azure Application offer that uses the base images for IHS and tWAS ND.
 
@@ -250,7 +260,7 @@ If the workflow completes successfully, proceed to the next section. If not, tro
 
 
 
-#### 6. Publish the tWAS ND Azure Application offer in Partner Center
+#### 8. Publish the tWAS ND Azure Application offer in Partner Center
 
 Because the workflow in the preceding section executed successfully, you can assume the Azure Application offer is ready to publish in Partner Center.
 
