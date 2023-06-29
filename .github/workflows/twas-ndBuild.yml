@@ -1,3 +1,5 @@
+# Copyright (c) IBM Corporation.
+# Copyright (c) Microsoft Corporation.
 name: twas-nd CICD
 
 # Controls when the action will run. 

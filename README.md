@@ -1,3 +1,6 @@
+<!-- Copyright (c) Microsoft Corporation. -->
+<!-- Copyright (c) IBM Corporation. -->
+
 # Azure Virtual Machine offers for IBM WebSphere traditional and supporting components
 
 This repository contains code which creates [Microsoft Partner Center](https://partner.microsoft.com/) ready offers of type [Azure virtual machine](https://learn.microsoft.com/en-us/partner-center/marketplace/publisher-guide-by-offer-type#list-of-offer-types). These are called "VM offers" for discussion. The following sub-directories are self contained VM offers.

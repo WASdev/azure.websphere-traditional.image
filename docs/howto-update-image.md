@@ -1,3 +1,6 @@
+<!-- Copyright (c) Microsoft Corporation. -->
+<!-- Copyright (c) IBM Corporation. -->
+
 # GitHub Actions automation
 
 This automation aims to simplify the process for keeping the Partner Center offers for WebSphere traditional up to date, with the latest fix packs, iFixes, yum updates, etc. At a high level, the least-effort update involves the following steps.

@@ -1,3 +1,6 @@
+<!-- Copyright (c) Microsoft Corporation. -->
+<!-- Copyright (c) IBM Corporation. -->
+
 # Purpose: Capture text and images intended for Partner Center offer
 
 ## Properties
