@@ -1,3 +1,6 @@
+<!-- Copyright (c) Microsoft Corporation. -->
+<!-- Copyright (c) IBM Corporation. -->
+
 # How to clean up the storage account with VHD files after image is published
 
 Normally, the image build CICD ([ihs CICD](../.github/workflows/ihsBuild.yml), [twas-base CICD](../.github/workflows/twas-baseBuild.yml) and [twas-nd CICD](../.github/workflows/twas-ndBuild.yml)) workflow will provision the source VM, install software package, execute integration test and finally generate SAS urls for OS disk and data disk VHD files which will be used for creating/updating Azure virtual machine offer(s) in Azure Partner Center. 

@@ -1,3 +1,6 @@
+<!-- Copyright (c) Microsoft Corporation. -->
+<!-- Copyright (c) IBM Corporation. -->
+
 # Deploy an Azure VM with RHEL 8.4, IBM HTTP Server V9.0, Plugin, WCT & IBM JDK 8.0 pre-installed
 
 ## Prerequisites
