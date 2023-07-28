@@ -17,6 +17,12 @@ This document describes two different approaches for causing an update to the co
 
 Use of the processes is not mutually exclusive. Both processes share code to avoid DRY violations.  The shared code does a number of "software update" type actions such as `yum update`, installing iFixes, etc.
 
+## IMPORTANT NOTE
+
+Both of these processes include polling software repositories for operating system, JDK, and middleware updates. If you are looking to "pick up" a recently release update, iFix, or other by virtue of running through the process, please be sure the particular item you are looking to "pick up" is present in the corresponding repository before running the process.
+
+Don't put any comments in any JSON files. Even if Microsoft documentation says it is safe to do so.
+
 ## The automated process
 
 The GitHub Actions workflows in this repository, and the related repositories referenced in the top level [README](../README.md), automate the process of packaging, testing, and publishing Azure virtual machine and Azure Application offers to Microsoft Partner Center. The automated process does involve a small amount of manual action in Partner Center, as described below.
