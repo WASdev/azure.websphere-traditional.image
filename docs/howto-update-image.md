@@ -19,7 +19,7 @@ Use of the processes is not mutually exclusive. Both processes share code to avo
 
 ## IMPORTANT NOTE
 
-Both of these processes include polling software repositories for operating system, JDK, and middleware updates. If you are looking to "pick up" a recently release update, iFix, or other by virtue of running through the process, please be sure the particular item you are looking to "pick up" is present in the correspondingy repository before running the process.
+Both of these processes include polling software repositories for operating system, JDK, and middleware updates. If you are looking to "pick up" a recently release update, iFix, or other by virtue of running through the process, please be sure the particular item you are looking to "pick up" is present in the corresponding repository before running the process.
 
 Don't put any comments in any JSON files. Even if Microsoft documentation says it is safe to do so.
 
