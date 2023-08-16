@@ -116,6 +116,7 @@ At this point, the tWAS Base Azure VM offer is live. This same VM offer has been
 
 1. Visit the [README](../README.md) and find the link containing the text `singleserver`. Select that link to visit that repository.
 1. Increment the version of `pom.xml`.
+1. If creating a new Plan, update the `pid` value as described in [How Azure customer usage attribution works in the IBM Partner Center offers](howto-update-pids.md).
 1. Edit `main/src/main/bicep/config.json`.
    1. Change the value of `twasImageVersion` to be the value entered for `imageVersionNumber` previously.
 1. Push the commit to the branch on which you intend to run the workflow in the next step.
@@ -244,6 +245,7 @@ At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offer
 
 1. Visit the [README](../README.md) and find the link containing the text `cluster`. Select that link to visit that repository.
 1. Increment the version of `pom.xml`.
+1. If creating a new Plan, update the `pid` value as described in [How Azure customer usage attribution works in the IBM Partner Center offers](howto-update-pids.md).
 1. Edit `main/src/main/bicep/config.json`.
    1. Change the value of `ihsImageVersion` to be the value entered for `imageVersionNumber` when you created the IHS image previously.
    1. Change the value of `twasNdImageVersion` to be the value entered for `imageVersionNumber` when you created the tWAS ND image previously.
