@@ -14,6 +14,10 @@ These VM offers are consumed by the following related offers of type [Azure Appl
 - [Deploy RHEL VM on Azure with IBM WebSphere Application Server traditional V9.0.5 singleserver pre-installed](https://github.com/WASdev/azure.websphere-traditional.singleserver)
 - [Deploy RHEL VMs on Azure with IBM WebSphere Application Server ND Traditional V9.0.5 cluster pre-installed](https://github.com/WASdev/azure.websphere-traditional.cluster)
 
+## General maintenance
+
+See the [docs](docs) directory for guides on various aspects of maintaining these and related offers.
+
 ## Automated Publishing of Azure virtual machine and Azure Application offers
 
 This repository and the related repositories have GitHub Actions workflows that package, test, and publish these offers to Microsoft Partner Center. For the definitive guide to this automation, see [GitHub Actions automation](docs/howto-update-image.md).
