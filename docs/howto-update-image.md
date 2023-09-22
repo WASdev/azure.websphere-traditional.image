@@ -32,6 +32,8 @@ The GitHub Actions workflows in this repository, and the related repositories re
 <details>
 <summary>Both sections of preconditions must be satisfied before running the workflows. [expand for details]</summary>
 
+Once the preconditions have been satisfied, they remain satisfied unless and until a change is made that would invalidate the set up in some way.
+
 #### 1. Set the GitHub Actions secrets for the repository running the workflows
 
 The recommended way to set the secrets is to run the scripts.  Setting the secrets manually is beyond the scope of this guide.
