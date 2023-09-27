@@ -67,7 +67,7 @@ Now that you have satisfied the preconditions **in this repository and related r
 
 #### 1. Increment the version of tWAS Base VM offer in the pom.xml
 
-1. Increment the version of `twas-base/pom.xml`.
+1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.image/blob/1c1172854376a3917e97c6e1db1325163e93daae/twas-base/pom.xml#L24) of `twas-base/pom.xml`.
 1. Push the commit to the branch on which you intend to run the workflow in the next step.
 
 #### 2. Run the workflow for the tWAS Base VM offer
@@ -117,7 +117,7 @@ Because the workflow in the preceding section executed successfully, you can ass
 At this point, the tWAS Base Azure VM offer is live. This same VM offer has been tested with the Azure Application offer, but the source code changes to publish a new iteration of the Azure Application offer have not been updated. The steps is this section show how to update the source files to use the new VM offer.
 
 1. Visit the [README](../README.md) and find the link containing the text `singleserver`. Select that link to visit that repository.
-1. Increment the version of `pom.xml`.
+1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.singleserver/blob/e278c6fc391179a055b80d8e47e067947c100720/pom.xml#L23) of `pom.xml`.
 1. If creating a new Plan, update the `pid` value as described in [How Azure customer usage attribution works in the IBM Partner Center offers](howto-update-pids.md).
 1. Edit `main/src/main/bicep/config.json`.
    1. Change the value of `twasImageVersion` to be the value entered for `imageVersionNumber` previously.
@@ -174,12 +174,12 @@ Because the workflow in the preceding section executed successfully, you can ass
 
 #### 1. Increment the version of ihs VM offer in the pom.xml
 
-1. Increment the version of `ihs/pom.xml`.
+1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.image/blob/1c1172854376a3917e97c6e1db1325163e93daae/ihs/pom.xml#L24) of `ihs/pom.xml`.
 1. Push the commit to the branch on which you intend to run the workflow in subsequent steps.
 
 #### 2. Increment the version of tWAS ND VM offer in the pom.xml
 
-1. Increment the version of `twas-nd/pom.xml`.
+1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.image/blob/1c1172854376a3917e97c6e1db1325163e93daae/twas-nd/pom.xml#L24) of `twas-nd/pom.xml`.
 1. Push the commit to the branch on which you intend to run the workflow in subsequent steps.
 
 #### 3. Run the workflow for the ihs VM offer
@@ -246,7 +246,7 @@ Because the workflows in the preceding sections executed successfully, you can a
 At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offers have already been tested via CI/CD with the Azure Application offer, but the source code changes to publish a new iteration of the Azure Application offer have not been updated. The steps is this section show how to update the source files to use the new VM offer.
 
 1. Visit the [README](../README.md) and find the link containing the text `cluster`. Select that link to visit that repository.
-1. Increment the version of `pom.xml`.
+1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.cluster/blob/6c44116a2bd0358725a2d714bb3c8d0d02cae320/pom.xml#L24) of `pom.xml`.
 1. If creating a new Plan, update the `pid` value as described in [How Azure customer usage attribution works in the IBM Partner Center offers](howto-update-pids.md).
 1. Edit `main/src/main/bicep/config.json`.
    1. Change the value of `ihsImageVersion` to be the value entered for `imageVersionNumber` when you created the IHS image previously.
