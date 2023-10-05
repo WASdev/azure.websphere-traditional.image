@@ -234,13 +234,6 @@ Because the workflows in the preceding sections executed successfully, you can a
 1. After some hours, or maybe days, the offer will enter "live" state.
 </details>
 
-
-
-</details>
-
-
-
-
 #### 6. Update the source files in the tWAS ND (aka cluster) Azure Application offer
 
 At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offers have already been tested via CI/CD with the Azure Application offer, but the source code changes to publish a new iteration of the Azure Application offer have not been updated. The steps is this section show how to update the source files to use the new VM offer.
