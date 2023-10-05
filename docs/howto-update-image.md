@@ -114,7 +114,9 @@ Because the workflow in the preceding section executed successfully, you can ass
 
 #### 4. Update the source files in the tWAS Base (aka single-server) Azure Application offer
 
-At this point, the tWAS Base Azure VM offer is live. This same VM offer has been tested with the Azure Application offer, but the source code changes to publish a new iteration of the Azure Application offer have not been updated. The steps is this section show how to update the source files to use the new VM offer.
+At this point, the tWAS Base Azure VM offer is live. This same VM offer has been tested with the Azure Application offer, but the source code changes to publish a new iteration of the Azure Application offer have not been updated. 
+<details> 
+<summary>The steps is this section show how to update the source files to use the new VM offer.</summary>
 
 1. Visit the [README](../README.md) and find the link containing the text `singleserver`. Select that link to visit that repository.
 1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.singleserver/blob/e278c6fc391179a055b80d8e47e067947c100720/pom.xml#L23) of `pom.xml`.
@@ -122,6 +124,7 @@ At this point, the tWAS Base Azure VM offer is live. This same VM offer has been
 1. Edit `main/src/main/bicep/config.json`.
    1. Change the value of `twasImageVersion` to be the value entered for `imageVersionNumber` previously.
 1. Push the commit to the branch on which you intend to run the workflow in the next step.
+</details>
 
 #### 5. Run the workflow for the tWAS Base (aka single-server) Azure Application offer
 
@@ -236,7 +239,10 @@ Because the workflows in the preceding sections executed successfully, you can a
 
 #### 6. Update the source files in the tWAS ND (aka cluster) Azure Application offer
 
-At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offers have already been tested via CI/CD with the Azure Application offer, but the source code changes to publish a new iteration of the Azure Application offer have not been updated. The steps is this section show how to update the source files to use the new VM offer.
+At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offers have already been tested via CI/CD with the Azure Application offer, but the source code changes to publish a new iteration of the Azure Application offer have not been updated. 
+
+<details>
+<summary>The steps is this section show how to update the source files to use the new VM offer.</summary>
 
 1. Visit the [README](../README.md) and find the link containing the text `cluster`. Select that link to visit that repository.
 1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.cluster/blob/6c44116a2bd0358725a2d714bb3c8d0d02cae320/pom.xml#L24) of `pom.xml`.
@@ -245,7 +251,7 @@ At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offer
    1. Change the value of `ihsImageVersion` to be the value entered for `imageVersionNumber` when you created the IHS image previously.
    1. Change the value of `twasNdImageVersion` to be the value entered for `imageVersionNumber` when you created the tWAS ND image previously.
 1. Push the commit to the branch on which you intend to run the workflow in the next step.
-
+</details>
 
 #### 7. Run the workflow for the tWAS ND (aka cluster) Azure Application offer
 
@@ -276,7 +282,7 @@ Because the workflow in the preceding section executed successfully, you can ass
 1. Visit Partner Center at https://partner.microsoft.com/.
 1. Sign in to the partner center by selecting the **Partner Center** link in the upper right corner of the page, next to **Search**. You must sign in this way.
 1. Select **Marketplace offers**.
-1. In the textfield labeled **Search by offer alias and ID**, enter `twas-cluster`.
+1. In the textfield labeled **Search by offer alias and ID**, enter `2021-04-08-twas-cluster`.
 1. There may be more than one row. Select the one in the whose **Offer type** is **Azure Application**. If you see more than one row with type **Azure Application**, consult with management to see which one to select.
 1. In the left navigation panel, select **Plan overview**.
 1. On the next page, select the one and only plan.
