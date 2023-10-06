@@ -71,3 +71,10 @@ These workflows run the same test that Azure Marketplace runs, so you can view s
 - How do I update the value in a Bicep file?
 
    The way we have adapted the Bicep tooling to our use of Maven does not allow such processing, so you must manually edit the hard-coded `<api-version>` values wherever they occur.
+
+- References/Related PRs
+    - https://github.com/WASdev/azure.websphere-traditional.image/pull/94
+    - https://github.com/WASdev/azure.websphere-traditional.singleserver/pull/90
+    - https://github.com/WASdev/azure.websphere-traditional.cluster/pull/229
+    - https://github.com/WASdev/azure.websphere-traditional.image/pull/96
+    - https://github.com/WASdev/azure.websphere-traditional.cluster/pull/231
