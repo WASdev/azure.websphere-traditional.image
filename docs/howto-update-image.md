@@ -76,8 +76,8 @@ Now that you have satisfied the preconditions **in this repository and related r
 <summary>Run the workflow to create the tWAS Base VM offer. [expand for details]</summary>
 
 1. Decide on a value for the `imageVersionNumber` parameter. The required syntax for this value is `9.0.YYYYMMDD`. Where `YYYYMMDD` is usually today's date.
-1. Visit the [GitHub Actions page for the workflow](https://github.com/WASdev/azure.websphere-traditional.image/actions/workflows/ihsBuild.yml).
-1. Select the **Run workflow** dropdown. Enter the value for `imageVersionNumber`.
+1. Visit the [GitHub Actions page for the twas-base CICD workflow](https://github.com/WASdev/azure.websphere-traditional.image/actions/workflows/twas-baseBuild.yml).
+1. Select the **Run workflow** dropdown. Enter the value for `imageVersionNumber` under `Must provide image version number`
 1. Select **Run workflow**.
 1. Observe the execution of the jobs in the workflow.
    - One very important job is **Verify the image**. This job calls another workflow, on the related repository for the Azure Application, but the VM image created by the calling workflow is taken as input to this called workflow.
@@ -95,7 +95,7 @@ Because the workflow in the preceding section executed successfully, you can ass
 1. Visit Partner Center at https://partner.microsoft.com/.
 1. Sign in to the partner center by selecting the **Partner Center** link in the upper right corner of the page, next to **Search**. You must sign in this way.
 1. Select **Marketplace offers**.
-1. In the textfield labeled **Search by offer alias and ID**, enter `twas-single-server-base-image`.
+1. In the textfield labeled **Search by offer alias and ID**, enter `2023-03-27-twas-single-server-base-image`.
 1. Select the one and only row. If you see more than one row, consult with management to see which one to select.
 1. In the left navigation panel, select **Plan overview**.
 1. On the next page, select the one and only plan.
@@ -118,7 +118,7 @@ At this point, the tWAS Base Azure VM offer is live. This same VM offer has been
 <details> 
 <summary>The steps is this section show how to update the source files to use the new VM offer.</summary>
 
-1. Visit the [README](../README.md) and find the link containing the text `singleserver`. Select that link to visit that repository.
+1. Visit the https://github.com/WASdev/azure.websphere-traditional.singleserver repository.
 1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.singleserver/blob/e278c6fc391179a055b80d8e47e067947c100720/pom.xml#L23) of `pom.xml`.
 1. If creating a new Plan, update the `pid` value as described in [How Azure customer usage attribution works in the IBM Partner Center offers](howto-update-pids.md).
 1. Edit `main/src/main/bicep/config.json`.
@@ -133,7 +133,7 @@ At this point, the tWAS Base Azure VM offer is live. This same VM offer has been
 <details>
 <summary>Run the workflow to create the tWAS Base (aka single-server) Azure Application offer. [expand for details]</summary>
 
-1. Visit the [README](../README.md) and find the link containing the text `singleserver`. Select that link to visit that repository.
+1. Visit the https://github.com/WASdev/azure.websphere-traditional.singleserver repository.
 1. In that repository, select the **Actions** tab.
 1. Select the **Package ARM** workflow.
 1. Select the **Run workflow** dropdown.
@@ -153,7 +153,7 @@ Because the workflow in the preceding section executed successfully, you can ass
 1. Visit Partner Center at https://partner.microsoft.com/.
 1. Sign in to the partner center by selecting the **Partner Center** link in the upper right corner of the page, next to **Search**. You must sign in this way.
 1. Select **Marketplace offers**.
-1. In the textfield labeled **Search by offer alias and ID**, enter `twas-base-single-server`.
+1. In the textfield labeled **Search by offer alias and ID**, enter `2022-01-07-twas-base-single-server`.
 1. Select the one and only row. If you see more than one row, consult with management to see which one to select.
 1. In the left navigation panel, select **Plan overview**.
 1. On the next page, select the one and only plan.
@@ -222,7 +222,7 @@ Because the workflows in the preceding sections executed successfully, you can a
 1. Visit Partner Center at https://partner.microsoft.com/.
 1. Sign in to the partner center by selecting the **Partner Center** link in the upper right corner of the page, next to **Search**. You must sign in this way.
 1. Select **Marketplace offers**.
-1. In the textfield labeled **Search by offer alias and ID**, enter `ihs-base-image`.
+1. In the textfield labeled **Search by offer alias and ID**, enter `2023-03-27-ihs-base-image`.
 1. Select the one and only row. If you see more than one row, consult with management to see which one to select.
 1. In the left navigation panel, select **Plan overview**.
 1. On the next page, select the one and only plan.
@@ -234,7 +234,7 @@ Because the workflows in the preceding sections executed successfully, you can a
 1. This should take you back to the Offer overview page, but the progress bar will now be partially filled in.
 1. The offer will go through the publishing process.
 1. Return to the **Marketplace offers | Overview** page by selecting **Marketplace offers** in the breadcrumb navigation in the top left of the screen.
-1. Return to step 4, but enter `twas-cluster-base-image` in the textfield. Continue the remaining steps up to and including 14. Be sure to use the correct `imageVersionNumber` value for tWAS ND.
+1. Return to step 4, but enter `2023-03-27-twas-cluster-base-image` in the textfield. Continue the remaining steps up to and including 14. Be sure to use the correct `imageVersionNumber` value for tWAS ND.
 1. After some hours or maybe days, the offers will enter "preview" state. In this state, you can manually test the offer. The CI/CD has already done sufficient testing, but you can do more if you like.
 1. For each of the two offers you published previously, select the big **Go Live** button.
 1. After some hours, or maybe days, the offer will enter "live" state.
@@ -247,7 +247,7 @@ At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offer
 <details>
 <summary>The steps is this section show how to update the source files to use the new VM offer.</summary>
 
-1. Visit the [README](../README.md) and find the link containing the text `cluster`. Select that link to visit that repository.
+1. Visit the https://github.com/WASdev/azure.websphere-traditional.cluster repository.
 1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.cluster/blob/6c44116a2bd0358725a2d714bb3c8d0d02cae320/pom.xml#L24) of `pom.xml`.
 1. If creating a new Plan, update the `pid` value as described in [How Azure customer usage attribution works in the IBM Partner Center offers](howto-update-pids.md).
 1. Edit `main/src/main/bicep/config.json`.
@@ -263,7 +263,7 @@ At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offer
 <details>
 <summary>Run the workflow to create the tWAS ND (aka cluster) Azure Application offer. [expand for details]</summary>
 
-1. Visit the [README](../README.md) and find the link containing the text `cluster`. Select that link to visit that repository.
+1. Visit the https://github.com/WASdev/azure.websphere-traditional.cluster repository.
 1. In that repository, select the **Actions** tab.
 1. Select the **Package ARM** workflow.
 1. Select the **Run workflow** dropdown.
@@ -315,4 +315,7 @@ See these links for guidance on how to update VM images.
 
 ## Troubleshooting
 
-- Certification failure
+- CICD build fails with `Api versions must be the latest or under 2 years old`
+    - See https://github.com/WASdev/azure.websphere-traditional.image/blob/main/docs/howto-update-apiVersions.md
+- CICD build fails with `Could not find artifact com.microsoft.azure.iaas:azure-javaee-iaas-parent:pom:1.0.18`
+    - See https://github.com/WASdev/azure.websphere-traditional.image/issues/95
