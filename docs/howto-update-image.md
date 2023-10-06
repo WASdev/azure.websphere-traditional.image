@@ -168,6 +168,9 @@ Because the workflow in the preceding section executed successfully, you can ass
 1. After some hours, or maybe days, the offer will enter "live" state.
 </details>
 
+#### 7. Cleanup test resources
+https://github.com/WASdev/azure.websphere-traditional.image/blob/main/docs/howto-cleanup-after-image-published.md#find-out-the-storage-account-from-azure-portal
+
 </details>
 
 ### Running the workflows for WebSphere Application Server traditional Network Deployment
@@ -296,6 +299,9 @@ Because the workflow in the preceding section executed successfully, you can ass
 1. Select the big **Go Live** button.
 1. After some hours, or maybe days, the offer will enter "live" state.
 </details>
+
+#### 9. Cleanup test resources
+https://github.com/WASdev/azure.websphere-traditional.image/blob/main/docs/howto-cleanup-after-image-published.md#find-out-the-storage-account-from-azure-portal
 
 </details>
 
