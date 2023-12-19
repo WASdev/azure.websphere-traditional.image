@@ -44,3 +44,7 @@ yum remove openscap-scanner -y -q
 
 # Enable sudo for admin, which is required by the remaining steps of the pipeline
 usermod -aG wheel ${admin}
+
+# Disable SWAP
+swapoff -a
+sed -i "s/ResourceDisk.EnableSwap=y/ResourceDisk.EnableSwap=n/g" /etc/waagent.conf
