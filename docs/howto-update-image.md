@@ -17,11 +17,13 @@ This document describes two different approaches for causing an update to the co
 
 Use of the processes is not mutually exclusive. Both processes share code to avoid DRY violations.  The shared code does a number of "software update" type actions such as `yum update`, installing iFixes, etc.
 
-## IMPORTANT NOTE
+## IMPORTANT NOTES
 
-Both of these processes include polling software repositories for operating system, JDK, and middleware updates. If you are looking to "pick up" a recently release update, iFix, or other by virtue of running through the process, please be sure the particular item you are looking to "pick up" is present in the corresponding repository before running the process.
+* Both of these processes include polling software repositories for operating system, JDK, and middleware updates. If you are looking to "pick up" a recently release update, iFix, or other by virtue of running through the process, please be sure the particular item you are looking to "pick up" is present in the corresponding repository before running the process.
 
-Don't put any comments in any JSON files. Even if Microsoft documentation says it is safe to do so.
+* Don't put any comments in any JSON files. Even if Microsoft documentation says it is safe to do so.
+
+* Although it is tempting to try to parallelize some of these steps, in practice this is impossible due to dependencies on Azure Marketplace publishing outcomes. The authors advise doing the steps entirely in serial.
 
 ## The automated process
 
@@ -121,7 +123,7 @@ At this point, the tWAS Base Azure VM offer is live. This same VM offer has been
 1. Visit the https://github.com/WASdev/azure.websphere-traditional.singleserver repository.
 1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.singleserver/blob/e278c6fc391179a055b80d8e47e067947c100720/pom.xml#L23) of `pom.xml`.
 1. If creating a new Plan, update the `pid` value as described in [How Azure customer usage attribution works in the IBM Partner Center offers](howto-update-pids.md).
-1. Edit `main/src/main/bicep/config.json`.
+1. Edit `src/main/bicep/config.json`.
    1. Change the value of `twasImageVersion` to be the value entered for `imageVersionNumber` previously.
 1. Push the commit to the branch on which you intend to run the workflow in the next step.
 </details>
@@ -178,6 +180,9 @@ https://github.com/WASdev/azure.websphere-traditional.image/blob/main/docs/howto
 <details>
 <summary>The steps in this section describe how to run the workflows and publish the VM offers and Azure Application offer for WebSphere Application Server ND [expand for details]</summary>
 
+<details> <!-- subsection about VM offers that are used in the tWAS ND (aka cluster) Azure Application offer -->
+<summary>The steps in this subsection show how to run the workflows and publish the VM offers. [expand for details]</summary>
+
 #### 1. Increment the version of ihs VM offer in the pom.xml
 
 1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.image/blob/1c1172854376a3917e97c6e1db1325163e93daae/ihs/pom.xml#L24) of `ihs/pom.xml`.
@@ -228,7 +233,7 @@ Because the workflows in the preceding sections executed successfully, you can a
 1. On the next page, select the one and only plan.
 1. On the next page, in the left navigation panel, select **Technical configuration**.
 1. In the **VM Images** section, you should see a row whose **Image version** column is the same as the value of `imageVersionNumber` you entered previously **for IHS and for tWAS ND**. If you do not see this value, troubleshoot and resolve the problem with guidance from the section on **The manual process** before proceeding.
-1. The previously run workflow will have updated the technical configuration. export Go to the bottom of the page and select **Review and publish**.
+1. The previously run workflow will have updated the technical configuration. Go to the bottom of the page and select **Review and publish**.
 1. On the next page, in the text area, paste the URL to the successful GitHub Actions workflow from the preceding section.
 1. Select **Publish**.
 1. This should take you back to the Offer overview page, but the progress bar will now be partially filled in.
@@ -239,6 +244,10 @@ Because the workflows in the preceding sections executed successfully, you can a
 1. For each of the two offers you published previously, select the big **Go Live** button.
 1. After some hours, or maybe days, the offer will enter "live" state.
 </details>
+</details> <!-- subsection about VM offers that are used in the tWAS ND (aka cluster) Azure Application offer -->
+
+<details> <!-- subsection about VM offers that are used in the tWAS ND (aka cluster) Azure Application offer -->
+<summary>The steps in this subsection show how to run the workflows and publish the Azure Application offer that uses the VM offers from the preceding section. [expand for details]</summary>
 
 #### 6. Update the source files in the tWAS ND (aka cluster) Azure Application offer
 
@@ -250,7 +259,7 @@ At this point, the tWAS ND and IHS Azure VM offers are live. These same VM offer
 1. Visit the https://github.com/WASdev/azure.websphere-traditional.cluster repository.
 1. Increment the [version](https://github.com/WASdev/azure.websphere-traditional.cluster/blob/6c44116a2bd0358725a2d714bb3c8d0d02cae320/pom.xml#L24) of `pom.xml`.
 1. If creating a new Plan, update the `pid` value as described in [How Azure customer usage attribution works in the IBM Partner Center offers](howto-update-pids.md).
-1. Edit `main/src/main/bicep/config.json`.
+1. Edit `src/main/bicep/config.json`.
    1. Change the value of `ihsImageVersion` to be the value entered for `imageVersionNumber` when you created the IHS image previously.
    1. Change the value of `twasNdImageVersion` to be the value entered for `imageVersionNumber` when you created the tWAS ND image previously.
 1. Push the commit to the branch on which you intend to run the workflow in the next step.
@@ -305,6 +314,7 @@ https://github.com/WASdev/azure.websphere-traditional.image/blob/main/docs/howto
 
 </details>
 
+</details>
 
 ## The manual process
 
@@ -316,6 +326,27 @@ See these links for guidance on how to update VM images.
 ## Troubleshooting
 
 - CICD build fails with `Api versions must be the latest or under 2 years old`
-    - See https://github.com/WASdev/azure.websphere-traditional.image/blob/main/docs/howto-update-apiVersions.md
+   - See https://github.com/WASdev/azure.websphere-traditional.image/blob/main/docs/howto-update-apiVersions.md
 - CICD build fails with `Could not find artifact com.microsoft.azure.iaas:azure-javaee-iaas-parent:pom:1.0.18`
-    - See https://github.com/WASdev/azure.websphere-traditional.image/issues/95
+   - See https://github.com/WASdev/azure.websphere-traditional.image/issues/95
+- Partner Center publishing failes for VM base image: **Attention needed**
+   - This might cause the offer to be left in a **Pending publish** state. When an offer is left in this state, any subsequent attempts to publish a new base image will fail. Follow these steps to remove the image left in the **Pending publish** state.
+      1. Sign in to Partner Center.
+      1. Select **Marketplace offers**.
+      1. Find the offer that failed. It will likely show **Attention needed** in the **Status** column.
+      1. Select that offer.
+      1. In the left navigation pane, select **Plan overview**.
+      1. Select the one and only one row in the table.
+      1. In the left navigation pane, select **Technical configuration**.
+      1. In the **VM Images** section, find the table. The bottom most row will likely show **Pending publish** in status.  Select the cell for that row in the **Image version** column.
+      1. In the **SAS URI** section, select **Remove** for all items in that section.
+      1. Select **Save VM image**.
+      1. You will be taken to the **VM Images** table again. The bottom most row will now show **No actions available** in the **Action** column.
+      1. In the left navigation pane, select **Plan overview**.
+      1. Select the one and only one row in the table.
+      1. In the left navigation pane, select **Technical configuration**.
+      1. In the **VM Images** section, find the table.
+      1. The bottom most row should now have **Delete image** in the **Action** column. Select **Delete image**.
+      1. Select **Confirm**.
+      1. Scroll to the bottom and select **Save draft**.
+      1. You should see a green bar notification toward the top of the page. If you see this, you now should be able to publish a new image.
