@@ -366,7 +366,7 @@ jobs:
             vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
             for (( i=0; i<${#vmGroups[@]}; i++ )); do 
                rgName=${vmGroups[$i]}
-               if az group exists --name $rgName; then
+               if $(az group exists --name $rgName); then
                  echo "Resource group $rgName exists. Deleting..."
                  az group delete --name $rgName --yes --no-wait
                  echo "Resource group $rgName has been scheduled for deletion."

@@ -363,19 +363,19 @@ jobs:
       - name: Delete resource groups during verification
         continue-on-error: true
         run: |
-          vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
-          for (( i=0; i<${#vmGroups[@]}; i++ )); do 
-             rgName=${vmGroups[$i]}
-             if az group exists --name $rgName; then
-               echo "Resource group $rgName exists. Deleting..."
-               az group delete --name $rgName --yes --no-wait
-               echo "Resource group $rgName has been scheduled for deletion."
-             else
-               echo "Resource group $rgName does not exist."
-             fi  
-          done
+            vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
+            for (( i=0; i<${#vmGroups[@]}; i++ )); do 
+               rgName=${vmGroups[$i]}
+               if $(az group exists --name $rgName); then
+                 echo "Resource group $rgName exists. Deleting..."
+                 az group delete --name $rgName --yes --no-wait
+                 echo "Resource group $rgName has been scheduled for deletion."
+               else
+                 echo "Resource group $rgName does not exist."
+               fi  
+            done
       - name: Delete testResourceGroup
         if: ${{ needs.verify_the_image.result != 'success' }}
         run: |
-          echo "The verify_the_image result is ${{ needs.verify_the_image.result }}, delete the testResourceGroup."
-          az group delete -n ${{ env.testResourceGroup }} --yes --no-wait
+            echo "The verify_the_image result is ${{ needs.verify_the_image.result }}, delete the testResourceGroup."
+            az group delete -n ${{ env.testResourceGroup }} --yes --no-wait
