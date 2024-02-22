@@ -336,7 +336,7 @@ jobs:
         run: echo "${{ toJSON(github.event.client_payload) }}"
 
   delete_resource:
-    needs: [summary]
+    needs: [build, verify_the_image, update_sas_url]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -376,5 +376,5 @@ jobs:
       - name: Delete testResourceGroup
         if: ${{ needs.verify_the_image.result != 'success' }}
         run: |
-          echo "The verify_the_image job not success, delete the testResourceGroup."
+          echo "The verify_the_image result is ${{ needs.verify_the_image.result }}, delete the testResourceGroup."
           az group delete -n ${{ env.testResourceGroup }} --yes --no-wait
