@@ -179,6 +179,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout ${{ env.repoName }}
+        uses: actions/checkout@v3
+        with:
+          path: ${{ env.repoName }}
+          ref: ${{ github.event.inputs.ref }}
       - name: Azure login
         uses: azure/login@v1
         with:
@@ -329,7 +334,6 @@ jobs:
         run: echo "${{ toJSON(github.event.inputs) }}"
       - name: Output client_payload from repository_dispatch
         run: echo "${{ toJSON(github.event.client_payload) }}"
-
 
   delete_resource:
     needs: [summary]
