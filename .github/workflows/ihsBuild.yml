@@ -337,7 +337,7 @@ jobs:
         run: echo "${{ toJSON(github.event.client_payload) }}"
 
   delete_resource:
-    needs: [build, verify_the_image, update_sas_url]
+    needs: [ build, verify_the_image, update_sas_url,summary ]
     runs-on: ubuntu-latest
     if: always()
     steps:
