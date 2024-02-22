@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
     inputs:
       imageVersionNumber:
-        description: 'Must provide image version number'
-        required: true
+        description: 'Provide image version number'
+        required: false
   # Allows you to run this workflow using GitHub APIs
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
@@ -56,7 +56,8 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
+    outputs:
+        imageVersionNumber: ${{ steps.setup-env-variables-based-on-dispatch-event.outputs.imageVersionNumber }}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Get versions of external dependencies
@@ -173,6 +174,11 @@ jobs:
           az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }}
+
+  verify_the_image:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Verify the image
         run: |
           imageResourceId=$(az image show --name ${{ env.vmName }} --resource-group ${{ env.testResourceGroup }} --query id -o tsv)
@@ -187,13 +193,13 @@ jobs:
           for (( i=0; i<${#vmGroups[@]}; i++ )); do
             rgName=${vmGroups[$i]}
             az group create -n $rgName -l ${{ env.location }}
-            
+
             az deployment group create --resource-group $rgName --name testDeployment \
               --template-file ${{ env.repoName }}/utilities/verifyTemplate.json \
               --parameters deploymentMode=${deploymentModes[$i]} ibmUserId=${ibmUserIds[$i]} ibmUserPwd=${ibmUserPwds[$i]} \
                 imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
                 scriptLocation=${{ env.scriptLocation }}
-            
+
             az group delete -n $rgName --yes --no-wait
           done
       - name: Verify the image with twas-cluster integration-test pipeline
@@ -206,7 +212,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ env.twasClusterRepo }}/actions/workflows/integration-test.yaml/dispatches \
             -d $(echo $requestData | jq -c)
-          
+
           # Wait until the workflow run starts
           idAndStatus=$(curl -L \
             -H "Accept: application/vnd.github+json" \
@@ -248,7 +254,7 @@ jobs:
               | jq -r '.status')
             echo "Workflow run ${workflowRunId} is ${status}"
           done
-          
+
           # Verify the workflow run result
           jobs=$(curl -L \
             -H "Accept: application/vnd.github+json" \
@@ -262,23 +268,10 @@ jobs:
           else
             echo "twas-cluster integration test workflow run ${workflowRunId} succeeded."
           fi
-      - name: Clean up all resources except for vhd storage account
-        uses: azure/CLI@v1
-        with:
-          azcliversion: ${{ env.azCliVersion }}
-          inlineScript: |
-            az image delete --ids \
-              $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
-            az vm delete --yes --ids \
-              $(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
-            az network nic delete --ids \
-              $(az network nic list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
-            az network vnet delete --ids \
-              $(az network vnet list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
-            az network public-ip delete --ids \
-              $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
-            az network nsg delete --ids \
-              $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+  update_sas_url:
+    needs: [build, verify_the_image]
+    runs-on: ubuntu-latest
+    steps:
       - name: Generate SAS url
         id: sas_url
         run: |
@@ -293,7 +286,7 @@ jobs:
           blobStorageEndpoint=$( az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob' )
           osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasToken
           dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
-          
+
           echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url-ihs.txt
           echo "##[set-output name=osDiskSasUrl;]${osDiskSasUrl}"
           echo "##[set-output name=dataDiskSasUrl;]${dataDiskSasUrl}"
@@ -304,6 +297,7 @@ jobs:
           path: sas-url-ihs.txt
       - name: Update offer sas url and version
         uses: microsoft/microsoft-partner-center-github-action@v3.1
+        if: ${{ needs.build.outputs.imageVersionNumber != '' }}
         with:
           offerId: ${{ env.offerId }}
           planId: ${{ env.planId }}
@@ -318,11 +312,37 @@ jobs:
           osDiskSasUrl: ${{steps.sas_url.outputs.osDiskSasUrl}}
           dataDiskSasUrl: ${{steps.sas_url.outputs.dataDiskSasUrl}}
           verbose: "false"
+
   summary:
-    needs: build
+    needs: [build, verify_the_image, update_sas_url]
     runs-on: ubuntu-latest
     steps:
       - name: Output inputs from workflow_dispatch
         run: echo "${{ toJSON(github.event.inputs) }}"
       - name: Output client_payload from repository_dispatch
         run: echo "${{ toJSON(github.event.client_payload) }}"
+
+
+  delete_resource:
+    needs: [summary]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Clean up all resources except for vhd storage account
+        run: |
+            az image delete --ids \
+              $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
+            az vm delete --yes --ids \
+              $(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
+            az network nic delete --ids \
+              $(az network nic list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network vnet delete --ids \
+              $(az network vnet list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network public-ip delete --ids \
+              $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network nsg delete --ids \
+              $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+      - name: Delete testResourceGroup
+        if: ${{ needs.verify_the_image.result == 'failure' }}
+        run: |
+          az group delete -n ${{ env.testResourceGroup }} --yes --no-wait
