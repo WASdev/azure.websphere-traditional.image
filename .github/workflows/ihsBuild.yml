@@ -342,6 +342,13 @@ jobs:
               $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
             az network nsg delete --ids \
               $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+      - name: Delete resource groups during verification
+        run: |
+          vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
+          for (( i=0; i<${#vmGroups[@]}; i++ )); do
+           rgName=${vmGroups[$i]}
+           az group delete -n $rgName --yes --no-wait
+          done
       - name: Delete testResourceGroup
         if: ${{ needs.verify_the_image.result != 'success' }}
         run: |
