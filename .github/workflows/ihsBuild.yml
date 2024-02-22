@@ -75,7 +75,7 @@ jobs:
           else
             imageVersionNumber=${{ github.event.client_payload.imageVersionNumber }}
           fi
-          echo "##[set-output name=imageVersionNumber;]${imageVersionNumber}"
+          echo "imageVersionNumber=${imageVersionNumber}" >> $GITHUB_OUTPUT
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
@@ -343,6 +343,7 @@ jobs:
             az network nsg delete --ids \
               $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
       - name: Delete testResourceGroup
-        if: ${{ needs.verify_the_image.result == 'failure' }}
+        if: ${{ needs.verify_the_image.result != 'success' }}
         run: |
+          echo "The verify_the_image job not success, delete the testResourceGroup."
           az group delete -n ${{ env.testResourceGroup }} --yes --no-wait
