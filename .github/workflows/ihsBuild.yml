@@ -33,8 +33,8 @@ env:
   unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
-  testResourceGroup: imageTest${{ github.run_id }}${{ github.run_number }}-ihs
-  vmName: vm${{ github.run_id }}${{ github.run_number }}
+  testResourceGroup: imageTest-${{ github.repository_owner }}-${{ github.run_id }}-${{ github.run_number }}-ihs
+  vmName: vm-${{ github.run_id }}-${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/ihs/test/
