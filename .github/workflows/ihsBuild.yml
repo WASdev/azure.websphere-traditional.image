@@ -345,6 +345,7 @@ jobs:
         with:
           creds: ${{ env.azureCredentials }}
       - name: Clean up all resources except for vhd storage account
+        continue-on-error: true
         run: |
             az image delete --ids \
               $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
@@ -359,11 +360,18 @@ jobs:
             az network nsg delete --ids \
               $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
       - name: Delete resource groups during verification
+        continue-on-error: true
         run: |
           vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
-          for (( i=0; i<${#vmGroups[@]}; i++ )); do
-           rgName=${vmGroups[$i]}
-           az group delete -n $rgName --yes --no-wait
+          for (( i=0; i<${#vmGroups[@]}; i++ )); do 
+             rgName=${vmGroups[$i]}
+             if az group exists --name $rgName; then
+               echo "Resource group $rgName exists. Deleting..."
+               az group delete --name $RESOURCE_GROUP --yes --no-wait
+               echo "Resource group $rgName has been scheduled for deletion."
+             else
+               echo "Resource group $rgName does not exist."
+             fi  
           done
       - name: Delete testResourceGroup
         if: ${{ needs.verify_the_image.result != 'success' }}
