@@ -79,7 +79,9 @@ Now that you have satisfied the preconditions **in this repository and related r
 
 1. Decide on a value for the `imageVersionNumber` parameter. The required syntax for this value is `9.0.YYYYMMDD`. Where `YYYYMMDD` is usually today's date.
 1. Visit the [GitHub Actions page for the twas-base CICD workflow](https://github.com/WASdev/azure.websphere-traditional.image/actions/workflows/twas-baseBuild.yml).
-1. Select the **Run workflow** dropdown. Enter the value for `imageVersionNumber` under `Must provide image version number`
+1. Select the **Run workflow** dropdown. Enter the value for `imageVersionNumber` under `Provide image version number`
+    - Please note that the `imageVersionNumber` must be provided if you want to publish the image to Partner Center. 
+    - If you do not provide `imageVersionNumber` value, the workflow will only used for test purpose.    
 1. Select **Run workflow**.
 1. Observe the execution of the jobs in the workflow.
    - One very important job is **Verify the image**. This job calls another workflow, on the related repository for the Azure Application, but the VM image created by the calling workflow is taken as input to this called workflow.
