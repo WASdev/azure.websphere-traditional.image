@@ -82,7 +82,6 @@ jobs:
           server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
           server-username: MAVEN_USERNAME # env variable for username
           server-password: MAVEN_TOKEN # env variable for token
-
       - name: Set Maven env
         env:
           MAVEN_USERNAME: github
@@ -91,19 +90,16 @@ jobs:
         run: |
           echo "MAVEN_USERNAME=${MAVEN_USERNAME}" >> "$GITHUB_ENV"
           echo "MAVEN_TOKEN=${MAVEN_TOKEN}" >> "$GITHUB_ENV"
-
       - name: Download arm-ttk used in partner center pipeline
         shell: bash
         run: |
           wget -O arm-template-toolkit.zip https://aka.ms/arm-ttk-azureapps
           unzip arm-template-toolkit.zip -d arm-ttk
-
       - name: Checkout ${{ env.repoName }}
         uses: actions/checkout@v3
         with:
           path: ${{ env.repoName }}
           ref: ${{ github.event.inputs.ref }}
-
       - name: Azure login
         uses: azure/login@v1
         with:
