@@ -64,6 +64,7 @@ jobs:
         run: |
           curl -Lo external-deps-versions.properties https://raw.githubusercontent.com/Azure/azure-javaee-iaas/main/external-deps-versions.properties
           source external-deps-versions.properties
+          echo "refArmttk=${ARM_TTK_REFERENCE}" >> $GITHUB_ENV
           echo "azCliVersion=${AZ_CLI_VERSION}" >> $GITHUB_ENV
       - name: Setup environment variables
         id: setup-env-variables-based-on-dispatch-event
@@ -90,11 +91,12 @@ jobs:
         run: |
           echo "MAVEN_USERNAME=${MAVEN_USERNAME}" >> "$GITHUB_ENV"
           echo "MAVEN_TOKEN=${MAVEN_TOKEN}" >> "$GITHUB_ENV"
-      - name: Download arm-ttk used in partner center pipeline
-        shell: bash
-        run: |
-          wget -O arm-template-toolkit.zip https://aka.ms/arm-ttk-azureapps
-          unzip arm-template-toolkit.zip -d arm-ttk
+      - name: Checkout arm-ttk
+        uses: actions/checkout@v3
+        with:
+          repository: Azure/arm-ttk
+          path: arm-ttk
+          ref: ${{ env.refArmttk }}
       - name: Checkout ${{ env.repoName }}
         uses: actions/checkout@v3
         with:
