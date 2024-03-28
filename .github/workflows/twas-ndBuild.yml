@@ -65,8 +65,6 @@ jobs:
           curl -Lo external-deps-versions.properties https://raw.githubusercontent.com/Azure/azure-javaee-iaas/main/external-deps-versions.properties
           source external-deps-versions.properties
           echo "azCliVersion=${AZ_CLI_VERSION}" >> $GITHUB_ENV
-          echo "refArmttk=${ARM_TTK_REFERENCE}" >> $GITHUB_ENV
-          echo "refJavaee=${AZURE_JAVAEE_IAAS_REFERENCE}" >> $GITHUB_ENV
       - name: Setup environment variables
         id: setup-env-variables-based-on-dispatch-event
         run: |
@@ -81,25 +79,27 @@ jobs:
         with:
           distribution: 'microsoft'
           java-version: '11'
-      - name: Checkout azure-javaee-iaas
-        uses: actions/checkout@v3
-        with:
-          repository: Azure/azure-javaee-iaas
-          path: azure-javaee-iaas
-          ref: ${{ env.refJavaee }}
+          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+          server-username: MAVEN_USERNAME # env variable for username
+          server-password: MAVEN_TOKEN # env variable for token
+      - name: Set Maven env
+        env:
+          MAVEN_USERNAME: github
+          MAVEN_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          echo "MAVEN_USERNAME=${MAVEN_USERNAME}" >> "$GITHUB_ENV"
+          echo "MAVEN_TOKEN=${MAVEN_TOKEN}" >> "$GITHUB_ENV"
       - name: Checkout arm-ttk
         uses: actions/checkout@v3
         with:
           repository: Azure/arm-ttk
           path: arm-ttk
-          ref: ${{ env.refArmttk }}
       - name: Checkout ${{ env.repoName }}
         uses: actions/checkout@v3
         with:
           path: ${{ env.repoName }}
           ref: ${{ github.event.inputs.ref }}
-      - name: Build azure-javaee-iaas
-        run: mvn -DskipTests clean install --file azure-javaee-iaas/pom.xml
       - name: Azure login
         uses: azure/login@v1
         with:
@@ -375,7 +375,7 @@ jobs:
                fi  
             done
       - name: Delete testResourceGroup
-        if: ${{ needs.verify_the_image.result != 'success' }}
+        if: ${{ needs.verify_the_image.result != 'success' || needs.build.outputs.imageVersionNumber == '' }}
         run: |
             echo "The verify_the_image result is ${{ needs.verify_the_image.result }}, delete the testResourceGroup."
             az group delete -n ${{ env.testResourceGroup }} --yes --no-wait    
