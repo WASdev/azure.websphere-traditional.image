@@ -64,7 +64,6 @@ jobs:
         run: |
           curl -Lo external-deps-versions.properties https://raw.githubusercontent.com/Azure/azure-javaee-iaas/main/external-deps-versions.properties
           source external-deps-versions.properties
-          echo "refArmttk=${ARM_TTK_REFERENCE}" >> $GITHUB_ENV
           echo "azCliVersion=${AZ_CLI_VERSION}" >> $GITHUB_ENV
       - name: Setup environment variables
         id: setup-env-variables-based-on-dispatch-event
@@ -96,7 +95,6 @@ jobs:
         with:
           repository: Azure/arm-ttk
           path: arm-ttk
-          ref: ${{ env.refArmttk }}
       - name: Checkout ${{ env.repoName }}
         uses: actions/checkout@v3
         with:
