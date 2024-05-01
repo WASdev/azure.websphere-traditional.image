@@ -10,6 +10,16 @@ on:
       imageVersionNumber:
         description: 'Provide image version number'
         required: false
+      updateOfferArtifact:
+        description: 'Update offer artifact'
+        required: true
+        type: boolean
+        default: true
+      skipIntegrationTests:
+        description: 'If true, do not call integration tests in other repositories.'
+        required: true
+        type: boolean
+        default: false
   # Allows you to run this workflow using GitHub APIs
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
@@ -212,6 +222,7 @@ jobs:
             az group delete -n $rgName --yes --no-wait
           done
       - name: Verify the image with twas-cluster integration-test pipeline
+        if: ${{ !inputs.skipIntegrationTests }}
         run: |
           # Trigger the workflow run
           requestData={\"ref\":\"${GITHUB_REF_NAME}\",\"inputs\":{\"databaseType\":\"none\",\"ndImageResourceId\":\"${ndImageResourceId}\",\"ihsImageResourceId\":\"${ihsImageResourceId}\"}}
@@ -311,7 +322,7 @@ jobs:
           path: sas-url-ihs.txt
       - name: Update offer sas url and version
         uses: microsoft/microsoft-partner-center-github-action@v3.1
-        if: ${{ needs.build.outputs.imageVersionNumber != '' }}
+        if: ${{ inputs.updateOfferArtifact == true && needs.build.outputs.imageVersionNumber != '' }}
         with:
           offerId: ${{ env.offerId }}
           planId: ${{ env.planId }}
