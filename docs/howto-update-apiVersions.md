@@ -70,7 +70,9 @@ These workflows run the same test that Azure Marketplace runs, so you can view s
     
 - How do I update the value in a Bicep file?
 
-   The way we have adapted the Bicep tooling to our use of Maven does not allow such processing, so you must manually edit the hard-coded `<api-version>` values wherever they occur.
+   For offers that use Bicep, we also use the [maven-resources-plugin](https://maven.apache.org/plugins/maven-resources-plugin/) to do `${}` substitution. All the Bicep files are in the `src/main/bicep` directory. The `maven-resources-plugin` copies the files from `src` to `target` and replaces the `${}` values. By convention we define these things in a properties file named `azure-common.properties`.
+   
+   For example, in the [azure.websphere-traditional.cluster](https://github.com/WASdev/azure.websphere-traditional.cluster/), all the bicep versions are definded in the [azure-common.properties](https://github.com/WASdev/azure.websphere-traditional.cluster/blob/main/src/main/resources/azure-common.properties) file. If you want to update the `apiVersion` for bicep files in the [azure.websphere-traditional.cluster](https://github.com/WASdev/azure.websphere-traditional.cluster/) offer, you can update the `azure.apiVersionXXX` values in the [azure-common.properties](https://github.com/WASdev/azure.websphere-traditional.cluster/blob/main/src/main/resources/azure-common.properties) file. The `maven-resources-plugin` will replace the `${}` values in the bicep files when copying from `src` to `target`.
 
 - References/Related PRs
     - https://github.com/WASdev/azure.websphere-traditional.image/pull/94
