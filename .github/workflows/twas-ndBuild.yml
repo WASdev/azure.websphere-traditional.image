@@ -155,12 +155,12 @@ jobs:
           timeout 1m sh -c 'until nc -zv $0 $1; do echo "nc rc: $?"; sleep 5; done' ${publicIP} 22
           sshpass -p ${vmAdminPassword} scp ${vmAdminId}@${publicIP}:/home/${vmAdminId}/scan_report_* .
       - name: Upload openscap scanning report before remidation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: scan-report-before
           path: scan_report_before.html
       - name: Upload openscap scanning report after remidation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: scan-report-after
           path: scan_report_after.html
@@ -305,7 +305,7 @@ jobs:
           echo "##[set-output name=osDiskSasUrl;]${osDiskSasUrl}"
           echo "##[set-output name=dataDiskSasUrl;]${dataDiskSasUrl}"
       - name: Upload SAS url
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sasurl-twasnd
           path: sas-url-twasnd.txt
