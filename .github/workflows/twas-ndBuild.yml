@@ -310,7 +310,7 @@ jobs:
           name: sasurl-twasnd
           path: sas-url-twasnd.txt
       - name: Update offer sas url and version
-        uses: microsoft/microsoft-partner-center-github-action@v3.1
+        uses: microsoft/microsoft-partner-center-github-action@v3.2
         if: ${{ needs.build.outputs.imageVersionNumber != '' }}
         with:
           offerId: ${{ env.offerId }}
