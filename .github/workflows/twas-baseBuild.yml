@@ -276,7 +276,21 @@ jobs:
           else
             echo "twas-single integration test workflow run ${workflowRunId} succeeded."
           fi
-      
+      - name: Clean up all resources except for vhd storage account
+        run: |
+            az image delete --ids \
+              $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
+            az vm delete --yes --ids \
+              $(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
+            az network nic delete --ids \
+              $(az network nic list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network vnet delete --ids \
+              $(az network vnet list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network public-ip delete --ids \
+              $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az network nsg delete --ids \
+              $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+
   update_sas_url:
     needs: [ build, verify_the_image ]
     runs-on: ubuntu-latest
@@ -344,21 +358,6 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ env.azureCredentials }}
-      - name: Clean up all resources except for vhd storage account
-        continue-on-error: true
-        run: |
-            az image delete --ids \
-              $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
-            az vm delete --yes --ids \
-              $(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
-            az network nic delete --ids \
-              $(az network nic list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
-            az network vnet delete --ids \
-              $(az network vnet list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
-            az network public-ip delete --ids \
-              $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
-            az network nsg delete --ids \
-              $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
       - name: Delete resource groups during verification
         continue-on-error: true
         run: |
