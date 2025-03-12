@@ -56,7 +56,7 @@ if [ ${#ibmIdCredentials[@]} -eq 2 ]; then
         echo "$output" >> $WAS_LOG_PATH
         output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl uninstall "$WEBSPHERE_WCT" "$IBM_JAVA_SDK" -installationDirectory ${WCT_INSTALL_DIRECTORY})
         echo "$output" >> $WAS_LOG_PATH
-        rm -rf /datadrive/IBM && rm -rf /datadrive/virtualimage.properties
+        rm -rf /datadrive/IBM
     fi
     echo "$(date): WebSphere installation updated." >> $WAS_LOG_PATH
 else
