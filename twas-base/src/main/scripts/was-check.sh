@@ -52,7 +52,7 @@ if [ ${#ibmIdCredentials[@]} -eq 2 ]; then
         # Remove tWAS installation for the un-entitled or undefined user
         output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl uninstall "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY})
         echo "$output" >> $WAS_LOG_PATH
-        rm -rf /datadrive/IBM && rm -rf /datadrive/virtualimage.properties
+        rm -rf /datadrive/IBM
     fi
     echo "$(date): WebSphere installation updated." >> $WAS_LOG_PATH
 else
