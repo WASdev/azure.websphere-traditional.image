@@ -20,6 +20,11 @@ on:
         required: true
         type: boolean
         default: false
+      retainTestingVMs:
+        description: 'If true, retain testing VMs that are created with the image.'
+        required: true
+        type: boolean
+        default: false
   # Allows you to run this workflow using GitHub APIs
   # PERSONAL_ACCESS_TOKEN=<GITHUB_PERSONAL_ACCESS_TOKEN>
   # REPO_NAME=WASdev/azure.websphere-traditional.image
@@ -219,7 +224,10 @@ jobs:
                 imageResourceId=$imageResourceId vmAdminId=${{ env.vmAdminId }} vmAdminPwd=${{ env.vmAdminPassword }} \
                 scriptLocation=${{ env.scriptLocation }}
 
-            az group delete -n $rgName --yes --no-wait
+            # Remove VM if inputs.retainTestingVMs is false
+            if [ ${{ inputs.retainTestingVMs }} == 'false' ]; then
+              az group delete -n $rgName --yes --no-wait
+            fi
           done
       - name: Verify the image with twas-cluster integration-test pipeline
         if: ${{ !inputs.skipIntegrationTests }}
@@ -372,6 +380,7 @@ jobs:
           creds: ${{ env.azureCredentials }}
       - name: Delete resource groups during verification
         continue-on-error: true
+        if: ${{ !inputs.retainTestingVMs }}
         run: |
             vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
             for (( i=0; i<${#vmGroups[@]}; i++ )); do 
