@@ -393,8 +393,3 @@ jobs:
                  echo "Resource group $rgName does not exist."
                fi  
             done
-      - name: Delete testResourceGroup
-        if: ${{ needs.verify_the_image.result != 'success' || needs.build.outputs.imageVersionNumber == '' }}
-        run: |
-            echo "The verify_the_image result is ${{ needs.verify_the_image.result }}, delete the testResourceGroup."
-            az group delete -n ${{ env.testResourceGroup }} --yes --no-wait    
