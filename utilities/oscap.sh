@@ -24,8 +24,7 @@ yum install scap-security-guide -y -q
 
 # Peform a SCAP compliance scan 
 oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_cis_workstation_l1 --fetch-remote-resources \
-    --results scan_results_before.xml --report scan_report_before.html \
-    /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+    --results scan_results_before.xml /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
 
 # Peform a SCAP compliance remediation with two skipping rules which conflict with Azure Linux Agent (waagent)
 oscap xccdf eval --remediate --profile xccdf_org.ssgproject.content_profile_cis_workstation_l1 --fetch-remote-resources \
@@ -34,11 +33,20 @@ oscap xccdf eval --remediate --profile xccdf_org.ssgproject.content_profile_cis_
     /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
 # Peform a SCAP compliance scan agin after remediation
 oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_cis_workstation_l1 --fetch-remote-resources \
-    --results scan_results_after.xml --report scan_report_after.html \
-    /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+    --results scan_results_after.xml /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+
+# Generate reports in HTML format by applying the workaround from:
+# https://forums.almalinux.org/t/oscap-xccdf-invocation-will-segfault-maybe-due-to-libxslt-patch/5790
+rpm -e --nodeps libxslt
+dnf install -y libxslt-1.1.34-9.el9_5.1
+oscap xccdf generate report scan_results_before.xml > scan_report_before.html
+oscap xccdf generate report scan_results_after.xml > scan_report_after.html
+
+# Copy the reports to the admin home directory
 cp scan_report_* /home/${admin}/
 
 # Remove openscap-scanner and security policies
+dnf remove -y libxslt-1.1.34-9.el9_5.1
 yum remove scap-security-guide -y -q
 yum remove openscap-scanner -y -q
 
