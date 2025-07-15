@@ -65,6 +65,7 @@ env:
   imageType: "x64Gen1"
   operatingSystemFamily: "linux"
   operatingSystemType: "redHat"
+  AZURE_CORE_USE_MSAL_HTTP_CACHE: "false"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
