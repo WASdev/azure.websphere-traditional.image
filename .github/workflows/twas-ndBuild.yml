@@ -128,6 +128,7 @@ jobs:
             -DstorageAccount=${{ env.vhdStorageAccountName }} -DvmName=${{ env.vmName }} \
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
+            -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} \        
             clean install --file ${{ env.repoName }}/twas-nd/pom.xml
       - name: Deploy a RHEL 9.x VM and install twas ND server
         run: |
