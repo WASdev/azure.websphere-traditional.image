@@ -123,8 +123,8 @@ jobs:
       - name: Build ${{ env.repoName }}
         run: |
           echo "Branch name is $GITHUB_REF_NAME"
+          cat -b /home/runner/work/_temp/*.sh
           mvn -Dgit.repo=${{ env.userName }} -Dgit.tag=$GITHUB_REF_NAME \
-          # -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} \
             -DstorageAccount=${{ env.vhdStorageAccountName }} -DvmName=${{ env.vmName }} \
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
