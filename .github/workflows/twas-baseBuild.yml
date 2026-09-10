@@ -48,7 +48,7 @@ env:
   unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
-  testResourceGroup: imageTest-${{ github.repository_owner }}-${{ github.run_id }}-${{ github.run_number }}-twasBase
+  testResourceGroup: IMAGETEST-WASDEV-${{ github.repository_owner }}-${{ github.run_id }}-${{ github.run_number }}-twasBase
   vmName: vm-${{ github.run_id }}-${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   location: eastus
