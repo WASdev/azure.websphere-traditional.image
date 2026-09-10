@@ -134,10 +134,21 @@ jobs:
           cd ${{ env.repoName }}/twas-nd/target/cli
           chmod a+x deploy.azcli
           ./deploy.azcli -n testDeployment -g ${{ env.testResourceGroup }} -l ${{ env.location }}
-          # Retrieve CustomScript extension logs
+      - name: Retrieve CustomScript extension logs
+        if: always()
+        run: |
           echo "Fetching extension logs..."
-          az vm extension list -g ${{ env.testResourceGroup }} --vm-name ${{ env.vmName }} -o json
-          az vm extension show -g ${{ env.testResourceGroup }} --vm-name ${{ env.vmName }} --name CustomScript -o json
+          az vm extension show -g ${{ env.testResourceGroup }} --vm-name ${{ env.vmName }} --name CustomScript -o json || true
+          echo "--- stdout log ---"
+          az vm run-command invoke -g ${{ env.testResourceGroup }} --name ${{ env.vmName }} \
+            --command-id RunShellScript \
+            --scripts "cat /var/lib/waagent/custom-script/download/0/stdout 2>/dev/null || echo '(stdout not found)'" \
+            --query 'value[0].message' -o tsv || true
+          echo "--- stderr log ---"
+          az vm run-command invoke -g ${{ env.testResourceGroup }} --name ${{ env.vmName }} \
+            --command-id RunShellScript \
+            --scripts "cat /var/lib/waagent/custom-script/download/0/stderr 2>/dev/null || echo '(stderr not found)'" \
+            --query 'value[0].message' -o tsv || true
       - name: Query public IP of VM
         uses: azure/CLI@v1
         with:
