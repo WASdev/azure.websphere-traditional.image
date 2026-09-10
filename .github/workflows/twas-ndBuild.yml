@@ -134,6 +134,10 @@ jobs:
           cd ${{ env.repoName }}/twas-nd/target/cli
           chmod a+x deploy.azcli
           ./deploy.azcli -n testDeployment -g ${{ env.testResourceGroup }} -l ${{ env.location }}
+          # Retrieve CustomScript extension logs
+          echo "Fetching extension logs..."
+          az vm extension list -g ${{ env.testResourceGroup }} --vm-name ${{ env.vmName }} -o json
+          az vm extension show -g ${{ env.testResourceGroup }} --vm-name ${{ env.vmName }} --name CustomScript -o json
       - name: Query public IP of VM
         uses: azure/CLI@v1
         with:
