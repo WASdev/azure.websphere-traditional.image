@@ -95,7 +95,7 @@ fi
 
 # Install IBM HTTP Server V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$IBM_HTTP_SERVER" "$IBM_JAVA_SDK" \
-    -repositories "$REPOSITORY_URL" \
+    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${IHS_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
@@ -110,7 +110,7 @@ fi
 
 # Install Web Server Plug-ins V9 for IBM WebSphere Application Server using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WEBSPHERE_PLUGIN" "$IBM_JAVA_SDK" \
-    -repositories "$REPOSITORY_URL" \
+    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${PLUGIN_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
@@ -125,7 +125,7 @@ fi
 
 # Install WebSphere Customization Toolbox V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WEBSPHERE_WCT" "$IBM_JAVA_SDK" \
-    -repositories "$REPOSITORY_URL" \
+    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${WCT_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file

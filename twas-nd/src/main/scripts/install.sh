@@ -93,8 +93,9 @@ else
 fi
 
 # Install IBM WebSphere Application Server Network Deployment V9 using IBM Instalation Manager
+# Use both base repository (full installer plug-ins) and entitled repository (latest fix pack)
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_ND_TRADITIONAL" "$IBM_JAVA_SDK" \
-    -repositories "$REPOSITORY_URL" \
+    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${WAS_ND_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
