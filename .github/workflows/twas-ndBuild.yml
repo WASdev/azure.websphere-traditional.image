@@ -250,7 +250,7 @@ jobs:
         run: |
           # Trigger the workflow run
           #requestData={\"ref\":\"${GITHUB_REF_NAME}\",\"inputs\":{\"databaseType\":\"none\",\"ndImageResourceId\":\"${ndImageResourceId}\",\"ihsImageResourceId\":\"${ihsImageResourceId}\",\"location\":\"${{ env.location }}\"}}
-          requestData=$(jq -n --arg ref "$GITHUB_REF_NAME" --arg databaseType "none" --arg ndImageResourceId "$ndImageResourceId" --arg ihsImageResourceId "$ihsImageResourceId" --arg location "eastus" '{ref: $ref, inputs: {databaseType: $databaseType, ndImageResourceId: $ndImageResourceId, ihsImageResourceId: $ihsImageResourceId, location: $location}}')
+          requestData=$(jq -n --arg ref "main" --arg databaseType "none" --arg ndImageResourceId "$ndImageResourceId" --arg ihsImageResourceId "$ihsImageResourceId" --arg location "eastus" '{ref: $ref, inputs: {databaseType: $databaseType, ndImageResourceId: $ndImageResourceId, ihsImageResourceId: $ihsImageResourceId, location: $location}}')
 
           curl --fail --verbose -L -X POST \
             -H "Accept: application/vnd.github+json" \
