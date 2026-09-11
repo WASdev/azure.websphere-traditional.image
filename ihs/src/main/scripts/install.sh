@@ -63,36 +63,40 @@ unzip -q "$IM_INSTALL_KIT" -d im_installer
 chmod -R 755 ./im_installer/*
 ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
-# Write imcl response file with credentials for entitled repository
-cat > install_response.xml << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<agent-input>
-  <server>
-    <repository location='${REPOSITORY_URL}' username='${userName}' password='${password}'/>
-  </server>
-</agent-input>
-EOF
+# Save credentials to secure storage for entitled repository
+echo "IMmasterPassword" > master_password_file
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
+    -secureStorageFile storage_file \
+    -masterPasswordFile master_password_file \
+    -userName "$userName" -userPassword "$password" \
+    -url "$REPOSITORY_URL"
+if [ $? -ne 0 ]; then
+    echo "$(date): Cannot connect to Passport Advantage."
+    rm -rf storage_file log_file master_password_file
+    exit 1
+fi
 
 # Check whether IBMid is entitled or not
 output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -repositories "$REPOSITORY_URL" \
-    -sP install_response.xml)
+    -secureStorageFile storage_file \
+    -masterPasswordFile master_password_file)
 if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
     echo "$(date): IBMid entitlement check succeeded."
 elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
     echo "$(date): IBMid entitlement check is not available."
-    rm -rf log_file install_response.xml
+    rm -rf storage_file log_file master_password_file
     exit 1
 else
     echo "$(date): IBMid entitlement check failed."
-    rm -rf log_file install_response.xml
+    rm -rf storage_file log_file master_password_file
     exit 1
 fi
 
 # Install IBM HTTP Server V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$IBM_HTTP_SERVER" "$IBM_JAVA_SDK" \
     -repositories "$REPOSITORY_URL" \
-    -sP install_response.xml \
+    -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${IHS_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
 
@@ -100,14 +104,14 @@ if [ $? -eq 0 ]; then
     echo "$(date): IBM HTTP Server V9 installed successfully."
 else
     echo "$(date): IBM HTTP Server V9 failed to be installed."
-    rm -rf log_file install_response.xml
+    rm -rf storage_file log_file master_password_file
     exit 1
 fi
 
 # Install Web Server Plug-ins V9 for IBM WebSphere Application Server using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WEBSPHERE_PLUGIN" "$IBM_JAVA_SDK" \
     -repositories "$REPOSITORY_URL" \
-    -sP install_response.xml \
+    -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${PLUGIN_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
 
@@ -115,14 +119,14 @@ if [ $? -eq 0 ]; then
     echo "$(date): Web Server Plug-ins V9 installed successfully."
 else
     echo "$(date): Web Server Plug-ins V9 failed to be installed."
-    rm -rf log_file install_response.xml
+    rm -rf storage_file log_file master_password_file
     exit 1
 fi
 
 # Install WebSphere Customization Toolbox V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WEBSPHERE_WCT" "$IBM_JAVA_SDK" \
     -repositories "$REPOSITORY_URL" \
-    -sP install_response.xml \
+    -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${WCT_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -installFixes recommended -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
 
@@ -130,14 +134,14 @@ if [ $? -eq 0 ]; then
     echo "$(date): WebSphere Customization Toolbox V9 installed successfully."
 else
     echo "$(date): WebSphere Customization Toolbox V9 failed to be installed."
-    rm -rf log_file install_response.xml
+    rm -rf storage_file log_file master_password_file
     exit 1
 fi
 
 # Update packages and apply iFixes
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll \
     -repositories "$REPOSITORY_URL" \
-    -sP install_response.xml \
+    -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -acceptLicense -log log_file -installFixes recommended \
     -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
@@ -145,12 +149,12 @@ if [ $? -eq 0 ]; then
     echo "$(date): Successfully updated packages and applied iFixes."
 else
     echo "$(date): Failed to update packages and apply iFixes."
-    rm -rf log_file install_response.xml
+    rm -rf storage_file log_file master_password_file
     exit 1
 fi
 
 # Remove temporary files
-rm -rf log_file install_response.xml
+rm -rf storage_file log_file master_password_file
 
 # Install other packages
 yum install cifs-utils -y -q
