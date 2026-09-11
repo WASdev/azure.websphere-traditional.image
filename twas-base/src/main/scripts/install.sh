@@ -62,26 +62,36 @@ unzip -q "$IM_INSTALL_KIT" -d im_installer
 chmod -R 755 ./im_installer/*
 ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
+# Write imcl response file with credentials for entitled repository
+cat > install_response.xml << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<agent-input>
+  <server>
+    <repository location='${REPOSITORY_URL}' username='${userName}' password='${password}'/>
+  </server>
+</agent-input>
+EOF
+
 # Check whether IBMid is entitled or not
 output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -repositories "$REPOSITORY_URL" \
-    -credential "$REPOSITORY_URL,$userName,$password")
+    -sP install_response.xml)
 if echo "$output" | grep "$WAS_BASE_VERSION_ENTITLED"; then
     echo "$(date): IBMid entitlement check succeeded."
 elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
     echo "$(date): IBMid entitlement check is not available."
-    rm -rf log_file
+    rm -rf log_file install_response.xml
     exit 1
 else
     echo "$(date): IBMid entitlement check failed."
-    rm -rf log_file
+    rm -rf log_file install_response.xml
     exit 1
 fi
 
 # Install IBM WebSphere Application Server V9 using IBM Instalation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" \
     -repositories "$REPOSITORY_URL" \
-    -credential "$REPOSITORY_URL,$userName,$password" \
+    -sP install_response.xml \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
 
@@ -89,14 +99,14 @@ if [ $? -eq 0 ]; then
     echo "$(date): IBM WebSphere Application Server V9 installed successfully."
 else
     echo "$(date): IBM WebSphere Application Server V9 failed to be installed."
-    rm -rf log_file
+    rm -rf log_file install_response.xml
     exit 1
 fi
 
 # Update packages and apply iFixes
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll \
     -repositories "$REPOSITORY_URL" \
-    -credential "$REPOSITORY_URL,$userName,$password" \
+    -sP install_response.xml \
     -acceptLicense -log log_file -installFixes recommended \
     -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
@@ -104,12 +114,12 @@ if [ $? -eq 0 ]; then
     echo "$(date): Successfully updated packages and applied iFixes."
 else
     echo "$(date): Failed to update packages and apply iFixes."
-    rm -rf log_file
+    rm -rf log_file install_response.xml
     exit 1
 fi
 
 # Remove temporary files
-rm -rf log_file
+rm -rf log_file install_response.xml
 
 # Install other packages
 yum install cifs-utils -y -q
