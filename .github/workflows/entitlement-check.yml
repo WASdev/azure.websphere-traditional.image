@@ -27,7 +27,7 @@ env:
   IM_INSTALL_DIRECTORY: /tmp/IBM/InstallationManager/V1.9
   IM_INSTALL_KIT: agent.installer.linux.gtk.x86_64.zip
   IM_INSTALL_KIT_URL: https://public.dhe.ibm.com/ibmdl/export/pub/software/im/zips/agent.installer.linux.gtk.x86_64.zip
-  WAS_ND_VERSION_ENTITLED: ND.v90_9.0.5007
+  WAS_ND_VERSION_ENTITLED: ND.v90_9.0.5
   NO_PACKAGES_FOUND: "No packages were found"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
