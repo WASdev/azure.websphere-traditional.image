@@ -207,7 +207,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
             "apiVersion": "${azure.apiVersionSA}",
             "location": "[parameters('location')]",
             "properties": {},
-            "kind": "Storage",
+            "kind": "StorageV2",
             "sku": {
                 "name": "[parameters('osDiskType')]"
             }
