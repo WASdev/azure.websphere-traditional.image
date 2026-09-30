@@ -338,15 +338,45 @@ jobs:
       - name: Generate SAS url
         id: sas_url
         run: |
+          # Install azcopy
+          wget -q https://aka.ms/downloadazcopy-v10-linux -O azcopy.tar.gz
+          tar -xzf azcopy.tar.gz --strip-components=1
+          chmod +x azcopy
+
           # Get a minus-24-hour date and a plus-30-day date for the SAS token
-          minus24HoursUtc=$(date -u --date "$dte -24 hour" +%Y-%m-%dT%H:%MZ)
-          plus30DaysUtc=$(date -u --date "$dte 30 day" +%Y-%m-%dT%H:%MZ)
+          minus24HoursUtc=$(date -u --date "$(date -u) -24 hour" +%Y-%m-%dT%H:%MZ)
+          plus30DaysUtc=$(date -u --date "$(date -u) 30 day" +%Y-%m-%dT%H:%MZ)
 
           vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
+
+          # Create the vhds container if it does not exist
+          az storage container create \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --name vhds
+
+          # Export managed OS disk to blob storage
+          osDiskId=$(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query storageProfile.osDisk.managedDisk.id -o tsv)
+          osDiskSasAccess=$(az disk grant-access --ids "$osDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
+          ./azcopy copy "$osDiskSasAccess" \
+            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${vhdStorageAccountAccessKey}" \
+            --blob-type PageBlob
+
+          # Export managed data disk to blob storage
+          dataDiskId=$(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query "storageProfile.dataDisks[0].managedDisk.id" -o tsv)
+          dataDiskSasAccess=$(az disk grant-access --ids "$dataDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
+          ./azcopy copy "$dataDiskSasAccess" \
+            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${vhdStorageAccountAccessKey}" \
+            --blob-type PageBlob
+
+          # Revoke disk access
+          az disk revoke-access --ids "$osDiskId"
+          az disk revoke-access --ids "$dataDiskId"
+
+          # Generate container SAS token for Partner Center
           sasToken=$(az storage container generate-sas \
             --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
             --name vhds --permissions rl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
-          blobStorageEndpoint=$( az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob' )
+          blobStorageEndpoint=$(az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob')
           osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasToken
           dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
 
