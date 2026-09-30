@@ -41,7 +41,7 @@ set_values() {
     yq eval -o=json '.[]' "$param_file" | jq -c '.' | while read -r line; do
         name=$(echo "$line" | jq -r '.name')
         value=$(echo "$line" | jq -r '.value')
-        printf '%s' "${value}" | GH_HOST=github.com gh secret set "$name" --repo WASdev/azure.websphere-traditional.image
+        printf '%s' "${value}" | gh secret set "$name" --repo WASdev/azure.websphere-traditional.image
     done
 }
 

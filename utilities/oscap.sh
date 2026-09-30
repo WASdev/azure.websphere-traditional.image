@@ -38,7 +38,7 @@ oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_cis_workstation_
 # Generate reports in HTML format by applying the workaround from:
 # https://forums.almalinux.org/t/oscap-xccdf-invocation-will-segfault-maybe-due-to-libxslt-patch/5790
 rpm -e --nodeps libxslt
-dnf install -y libxslt-1.1.34-9.el9_5.1
+dnf install -y libxslt
 oscap xccdf generate report scan_results_before.xml > scan_report_before.html
 oscap xccdf generate report scan_results_after.xml > scan_report_after.html
 
@@ -46,7 +46,7 @@ oscap xccdf generate report scan_results_after.xml > scan_report_after.html
 cp scan_report_* /home/${admin}/
 
 # Remove openscap-scanner and security policies
-dnf remove -y libxslt-1.1.34-9.el9_5.1
+dnf remove -y libxslt
 yum remove scap-security-guide -y -q
 yum remove openscap-scanner -y -q
 
