@@ -19,7 +19,7 @@
             "type": "string"
         },
         "vmSize": {
-            "defaultValue": "Standard_D2_v3",
+            "defaultValue": "Standard_D2s_v3",
             "type": "string"
         },
         "osDiskType": {
