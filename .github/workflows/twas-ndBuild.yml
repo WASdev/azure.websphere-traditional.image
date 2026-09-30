@@ -62,7 +62,7 @@ env:
   clientId: ${{ secrets.CLIENT_ID }}
   secretValue: ${{ secrets.SECRET_VALUE }}
   tenantId: ${{ secrets.TENANT_ID }}
-  imageType: "x64Gen1"
+  imageType: "x64Gen2"
   operatingSystemFamily: "linux"
   operatingSystemType: "redHat"
   AZURE_CORE_USE_MSAL_HTTP_CACHE: "false"

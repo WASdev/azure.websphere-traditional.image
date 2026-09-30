@@ -165,8 +165,11 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
             "apiVersion": "${azure.apiVersion}",
             "name": "[variables('name_publicIPAddress')]",
             "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard"
+            },
             "properties": {
-                "publicIPAllocationMethod": "Dynamic",
+                "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
                     "domainNameLabel": "[variables('const_dnsLabelPrefix')]"
                 }
