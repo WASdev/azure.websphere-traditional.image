@@ -96,7 +96,6 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
         "ref_networkInterface": "[resourceId('Microsoft.Network/networkInterfaces', variables('name_networkInterface'))]",
         "ref_networkSecurityGroup": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('name_networkSecurityGroup'))]",
         "ref_publicIPAddress": "[resourceId('Microsoft.Network/publicIPAddresses', variables('name_publicIPAddress'))]",
-        "ref_storage": "[resourceId('Microsoft.Storage/storageAccounts', variables('name_storageAccount'))]",
         "ref_subnet": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('name_virtualNetwork'), parameters('subnetName'))]",
         "ref_virtualMachine": "[resourceId('Microsoft.Compute/virtualMachines', variables('name_virtualMachine'))]",
         "ref_virtualNetwork": "[resourceId('Microsoft.Network/virtualNetworks', variables('name_virtualNetwork'))]"
