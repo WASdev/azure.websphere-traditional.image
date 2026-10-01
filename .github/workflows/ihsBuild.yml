@@ -129,6 +129,15 @@ jobs:
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
             clean install --file ${{ env.repoName }}/ihs/pom.xml
+      - name: Delete any stale resource groups from prior runs
+        run: |
+          staleGroups=$(az group list --query "[?starts_with(name,'IMAGETEST-WASDEV-') && ends_with(name,'-ihs')].name" -o tsv || true)
+          for rgName in $staleGroups; do
+            if [[ "$rgName" != "${{ env.testResourceGroup }}" ]]; then
+              echo "Deleting stale resource group: $rgName"
+              az group delete --name "$rgName" --yes --no-wait || true
+            fi
+          done
       - name: Deploy a RHEL 9.x VM and install IHS server
         run: |
           cd ${{ env.repoName }}/ihs/target/cli
@@ -313,6 +322,8 @@ jobs:
               $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
             az network nsg delete --ids \
               $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            az disk delete --yes --ids \
+              $(az disk list -g ${{ env.testResourceGroup }} --query [*].id -o tsv) || true
 
   update_sas_url:
     needs: [build, verify_the_image]
@@ -416,7 +427,7 @@ jobs:
         if: ${{ !inputs.retainTestingVMs }}
         run: |
             vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
-            for (( i=0; i<${#vmGroups[@]}; i++ )); do 
+            for (( i=0; i<${#vmGroups[@]}; i++ )); do
                rgName=${vmGroups[$i]}
                if $(az group exists --name $rgName); then
                  echo "Resource group $rgName exists. Deleting..."
@@ -424,5 +435,16 @@ jobs:
                  echo "Resource group $rgName has been scheduled for deletion."
                else
                  echo "Resource group $rgName does not exist."
-               fi  
+               fi
             done
+      - name: Delete primary test resource group
+        continue-on-error: true
+        if: ${{ !inputs.retainTestingVMs }}
+        run: |
+            if $(az group exists --name ${{ env.testResourceGroup }}); then
+              echo "Deleting primary resource group ${{ env.testResourceGroup }}..."
+              az group delete --name ${{ env.testResourceGroup }} --yes --no-wait
+              echo "Resource group ${{ env.testResourceGroup }} has been scheduled for deletion."
+            else
+              echo "Resource group ${{ env.testResourceGroup }} does not exist."
+            fi
