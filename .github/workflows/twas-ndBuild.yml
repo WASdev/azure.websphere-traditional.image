@@ -213,7 +213,7 @@ jobs:
         run: |
           az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
-          az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }}
+          az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }} --hyper-v-generation V2
 
   verify_the_image:
     needs: build
