@@ -364,15 +364,26 @@ jobs:
             --name vhds
 
           # Export managed OS disk to blob storage
-          # Get disk IDs from the managed image (VM may have been deleted by verify_the_image job)
-          osDiskId=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query storageProfile.osDisk.managedDisk.id -o tsv)
+          # Get disk IDs from the managed image (VM has been deleted by verify_the_image job)
+          imageJson=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} -o json)
+          osDiskId=$(echo "$imageJson" | jq -r '.storageProfile.osDisk.managedDisk.id // empty')
+          if [ -z "$osDiskId" ]; then
+            echo "ERROR: osDiskId is empty - az image show did not return a managed disk ID for the OS disk."
+            echo "Image JSON: $imageJson"
+            exit 1
+          fi
           osDiskSasAccess=$(az disk grant-access --ids "$osDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
           ./azcopy copy "$osDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${vhdStorageAccountAccessKey}" \
             --blob-type PageBlob
 
           # Export managed data disk to blob storage
-          dataDiskId=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query "storageProfile.dataDisks[0].managedDisk.id" -o tsv)
+          dataDiskId=$(echo "$imageJson" | jq -r '.storageProfile.dataDisks[0].managedDisk.id // empty')
+          if [ -z "$dataDiskId" ]; then
+            echo "ERROR: dataDiskId is empty - az image show did not return a managed disk ID for the data disk."
+            echo "Image JSON: $imageJson"
+            exit 1
+          fi
           dataDiskSasAccess=$(az disk grant-access --ids "$dataDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
           ./azcopy copy "$dataDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${vhdStorageAccountAccessKey}" \
