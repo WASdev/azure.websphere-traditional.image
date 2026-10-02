@@ -60,7 +60,7 @@ wget -O "$IM_INSTALL_KIT" "$IM_INSTALL_KIT_URL" -q
 mkdir im_installer
 unzip -q "$IM_INSTALL_KIT" -d im_installer
 chmod -R 755 ./im_installer/*
-./im_installer/installc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
+./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
 # Save credentials to secure storage using Passport Advantage (same as ND)
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
