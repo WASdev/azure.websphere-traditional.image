@@ -368,14 +368,15 @@ jobs:
             --name vhds
 
           # Export managed OS disk to blob storage
-          osDiskId=$(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query storageProfile.osDisk.managedDisk.id -o tsv)
+          # Get disk IDs from the managed image (VM may have been deleted by verify_the_image job)
+          osDiskId=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query storageProfile.osDisk.managedDisk.id -o tsv)
           osDiskSasAccess=$(az disk grant-access --ids "$osDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
           ./azcopy copy "$osDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${vhdStorageAccountAccessKey}" \
             --blob-type PageBlob
 
           # Export managed data disk to blob storage
-          dataDiskId=$(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query "storageProfile.dataDisks[0].managedDisk.id" -o tsv)
+          dataDiskId=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query "storageProfile.dataDisks[0].managedDisk.id" -o tsv)
           dataDiskSasAccess=$(az disk grant-access --ids "$dataDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
           ./azcopy copy "$dataDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${vhdStorageAccountAccessKey}" \
