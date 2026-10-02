@@ -110,13 +110,15 @@ ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -masterPasswordFile master_password_file | grep -E "BASE\.v90|java\.jdk"
 
 # Install IBM WebSphere Application Server V9 using IBM Installation Manager
-# Pin to 9.0.5028 - the latest version available in the entitled repo.
-# 9.0.5029 exists only in V9WASND and is missing the BASE-specific plug-in
-# com.ibm.was.base.moreinfo.v90_9.0.0.20160412_0000 which is required for install.
+# Install from the entitled repo only, pinned to 9.0.5028.
+# V9WASND must NOT be in the repo list: it advertises 9.0.5029 which causes imcl to
+# resolve to that version, but 9.0.5029 in V9WASND is missing the BASE-specific plug-in
+# com.ibm.was.base.moreinfo.v90_9.0.0.20160412_0000. The entitled repo is self-contained
+# for 9.0.5028 and includes all required plug-ins.
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
     "$WAS_BASE_TRADITIONAL" \
     "$IBM_JAVA_SDK" \
-    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
+    -repositories "$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
