@@ -240,7 +240,7 @@ jobs:
             fi
           done
       - name: Verify the image with twas-cluster integration-test pipeline
-        if: ${{ !inputs.skipIntegrationTests }}
+        if: ${{ !inputs.skipIntegrationTests && env.ndImageResourceId != '' }}
         run: |
           # Trigger the workflow run
           #requestData={\"ref\":\"${GITHUB_REF_NAME}\",\"inputs\":{\"databaseType\":\"none\",\"ndImageResourceId\":\"${ndImageResourceId}\",\"ihsImageResourceId\":\"${ihsImageResourceId}\",\"location\":\"${{ env.location }}\"}}
