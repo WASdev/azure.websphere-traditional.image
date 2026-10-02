@@ -62,13 +62,26 @@ unzip -q "$IM_INSTALL_KIT" -d im_installer
 chmod -R 755 ./im_installer/*
 ./im_installer/installc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
-# Save credentials to secure storage using Passport Advantage (same as ND)
+# Save credentials to secure storage:
+# - Passport Advantage covers the entitled repo (entitlement check + package download)
+# - V9WASBASE requires an explicit -url credential for the BASE installer plug-ins
+#   (com.ibm.was.launcher.v90, com.ibm.was.base.moreinfo.v90, com.ibm.was.install.path.check.v90)
+#   which only exist in V9WASBASE, not in the entitled repo
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
     -secureStorageFile storage_file \
     -userName "$userName" -userPassword "$password" \
     -passportAdvantage
 if [ $? -ne 0 ]; then
     echo "$(date): Cannot connect to Passport Advantage."
+    rm -rf storage_file log_file
+    exit 1
+fi
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
+    -secureStorageFile storage_file \
+    -userName "$userName" -userPassword "$password" \
+    -url "$BASE_REPOSITORY_URL"
+if [ $? -ne 0 ]; then
+    echo "$(date): Cannot save credential for BASE repository."
     rm -rf storage_file log_file
     exit 1
 fi
@@ -90,12 +103,13 @@ else
 fi
 
 # Install IBM WebSphere Application Server Base V9 using IBM Installation Manager
-# Use Passport Advantage entitled repo only - it is self-contained for the pinned version
-# and includes the BASE-specific installer plug-ins (launcher, moreinfo, install.path.check).
+# BASE_REPOSITORY_URL (V9WASBASE) provides the BASE-specific installer plug-ins:
+#   com.ibm.was.launcher.v90, com.ibm.was.base.moreinfo.v90, com.ibm.was.install.path.check.v90
+# REPOSITORY_URL (entitled) provides the package itself.
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
     "$WAS_BASE_TRADITIONAL" \
     "$IBM_JAVA_SDK" \
-    -repositories "$REPOSITORY_URL" \
+    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
