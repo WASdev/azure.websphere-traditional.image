@@ -89,17 +89,13 @@ else
     exit 1
 fi
 
-# Diagnostic: show what version imcl will resolve for unversioned BASE from entitled repo
-echo "--- BASE packages in entitled repo (no trailing slash) ---"
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
-    -cPA \
-    -secureStorageFile storage_file | grep -E "BASE\.v90|java\.jdk"
-
 # Install IBM WebSphere Application Server Base V9 using IBM Installation Manager
+# Install from V9WASND (http) which is the full product repo and carries all installer
+# plug-ins. The entitled repo is used as a secondary source for the package entitlement.
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
     "$WAS_BASE_TRADITIONAL" \
     "$IBM_JAVA_SDK" \
-    -repositories "$REPOSITORY_URL" \
+    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
