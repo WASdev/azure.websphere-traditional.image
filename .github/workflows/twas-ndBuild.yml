@@ -365,6 +365,11 @@ jobs:
             --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
             --name vhds
 
+          # Generate container SAS token (used for both azcopy destinations and Partner Center)
+          sasToken=$(az storage container generate-sas \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --name vhds --permissions racwdl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
+
           # Export managed OS disk to blob storage
           # Get disk IDs from the managed image (VM has been deleted by verify_the_image job)
           imageJson=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} -o json)
@@ -376,7 +381,7 @@ jobs:
           fi
           osDiskSasAccess=$(az disk grant-access --ids "$osDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
           ./azcopy copy "$osDiskSasAccess" \
-            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${vhdStorageAccountAccessKey}" \
+            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${sasToken}" \
             --blob-type PageBlob
 
           # Export managed data disk to blob storage
@@ -388,17 +393,13 @@ jobs:
           fi
           dataDiskSasAccess=$(az disk grant-access --ids "$dataDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
           ./azcopy copy "$dataDiskSasAccess" \
-            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${vhdStorageAccountAccessKey}" \
+            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${sasToken}" \
             --blob-type PageBlob
 
           # Revoke disk access
           az disk revoke-access --ids "$osDiskId"
           az disk revoke-access --ids "$dataDiskId"
 
-          # Generate container SAS token for Partner Center
-          sasToken=$(az storage container generate-sas \
-            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
-            --name vhds --permissions rl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
           blobStorageEndpoint=$(az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob')
           osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasToken
           dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
