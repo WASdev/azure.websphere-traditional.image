@@ -92,7 +92,10 @@ else
     exit 1
 fi
 
-# List available BASE and JDK packages for diagnostics
+# List available BASE packages in V9WASBASE and entitled repositories for diagnostics
+echo "Available BASE and JDK packages in V9WASBASE repository:"
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
+    -repositories "$BASE_REPOSITORY_URL" | grep -E "BASE\.v90|java\.jdk"
 echo "Available BASE and JDK packages in entitled repository:"
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -repositories "$REPOSITORY_URL" \
@@ -100,8 +103,21 @@ ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -masterPasswordFile master_password_file | grep -E "BASE\.v90|java\.jdk"
 
 # Install IBM WebSphere Application Server V9 using IBM Installation Manager
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" \
-    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
+# Use BASE_REPOSITORY_URL alone so imcl cannot resolve the broken 9.0.5028 from the entitled repo
+# The JDK is sourced from the entitled repo in a separate step after base install
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" \
+    -repositories "$BASE_REPOSITORY_URL" \
+    -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
+    -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
+if [ $? -ne 0 ]; then
+    echo "$(date): IBM WebSphere Application Server V9 failed to be installed."
+    rm -rf storage_file log_file master_password_file
+    exit 1
+fi
+
+# Install JDK from entitled repository separately
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$IBM_JAVA_SDK" \
+    -repositories "$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
