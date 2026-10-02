@@ -102,15 +102,13 @@ ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -secureStorageFile storage_file \
     -masterPasswordFile master_password_file | grep -E "BASE\.v90|java\.jdk"
 
-# Install IBM WebSphere Application Server V9 and JDK using IBM Installation Manager
-# Pin exact versions to prevent imcl from upgrading to the broken 9.0.5028 build.
-# offering.service.repositories.bypass=true disables version upgrade resolution.
-BYPASS_PREF="offering.service.repositories.bypass=true"
+# Install IBM WebSphere Application Server V9 using IBM Installation Manager
+# BASE_REPOSITORY_URL (V9WASND) provides the installer plug-ins; REPOSITORY_URL provides fix packs
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" \
-    -repositories "$REPOSITORY_URL" \
+    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
-    -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF,$BYPASS_PREF -showProgress -log log_file
+    -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
 
 if [ $? -eq 0 ]; then
     echo "$(date): IBM WebSphere Application Server V9 installed successfully."
