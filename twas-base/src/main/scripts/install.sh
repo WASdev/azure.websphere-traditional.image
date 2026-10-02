@@ -102,25 +102,15 @@ ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -secureStorageFile storage_file \
     -masterPasswordFile master_password_file | grep -E "BASE\.v90|java\.jdk"
 
-# Install IBM WebSphere Application Server V9 using IBM Installation Manager
-# Use BASE_REPOSITORY_URL alone so imcl cannot resolve the broken 9.0.5028 from the entitled repo
-# The JDK is sourced from the entitled repo in a separate step after base install
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" \
-    -repositories "$BASE_REPOSITORY_URL" \
-    -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
-    -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
-if [ $? -ne 0 ]; then
-    echo "$(date): IBM WebSphere Application Server V9 failed to be installed."
-    rm -rf storage_file log_file master_password_file
-    exit 1
-fi
-
-# Install JDK from entitled repository separately
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$IBM_JAVA_SDK" \
+# Install IBM WebSphere Application Server V9 and JDK using IBM Installation Manager
+# Pin exact versions to prevent imcl from upgrading to the broken 9.0.5028 build.
+# offering.service.repositories.bypass=true disables version upgrade resolution.
+BYPASS_PREF="offering.service.repositories.bypass=true"
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" \
     -repositories "$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
-    -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
+    -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF,$BYPASS_PREF -showProgress -log log_file
 
 if [ $? -eq 0 ]; then
     echo "$(date): IBM WebSphere Application Server V9 installed successfully."
