@@ -344,6 +344,8 @@ jobs:
           plus30DaysUtc=$(date -u --date "$(date -u) 30 day" +%Y-%m-%dT%H:%MZ)
 
           vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
+          echo "vhdStorageAccountAccessKey length: ${#vhdStorageAccountAccessKey}"
+          if [ -z "$vhdStorageAccountAccessKey" ]; then echo "ERROR: vhdStorageAccountAccessKey is empty"; exit 1; fi
 
           # Create the vhds container if it does not exist
           az storage container create \
@@ -351,9 +353,12 @@ jobs:
             --name vhds
 
           # Generate container SAS token (used for both azcopy destinations and Partner Center)
+          # Strip any surrounding quotes that az cli may add
           sasToken=$(az storage container generate-sas \
             --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
-            --name vhds --permissions racwdl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
+            --name vhds --permissions racwdl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv | tr -d '"')
+          echo "sasToken length: ${#sasToken}"
+          if [ -z "$sasToken" ]; then echo "ERROR: sasToken is empty"; exit 1; fi
 
           # Export managed OS disk to blob storage
           # Get disk IDs from the managed image (VM has been deleted by verify_the_image job)
@@ -365,6 +370,8 @@ jobs:
             exit 1
           fi
           osDiskSasAccess=$(az disk grant-access --ids "$osDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
+          echo "osDiskSasAccess length: ${#osDiskSasAccess}"
+          if [ -z "$osDiskSasAccess" ]; then echo "ERROR: osDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$osDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${sasToken}" \
             --blob-type PageBlob
@@ -377,6 +384,8 @@ jobs:
             exit 1
           fi
           dataDiskSasAccess=$(az disk grant-access --ids "$dataDiskId" --duration-in-seconds 3600 --query accessSas -o tsv)
+          echo "dataDiskSasAccess length: ${#dataDiskSasAccess}"
+          if [ -z "$dataDiskSasAccess" ]; then echo "ERROR: dataDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$dataDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${sasToken}" \
             --blob-type PageBlob
