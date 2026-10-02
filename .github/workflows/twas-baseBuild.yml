@@ -333,8 +333,8 @@ jobs:
               $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
             az network nsg delete --ids \
               $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
-            az disk delete --yes --ids \
-              $(az disk list -g ${{ env.testResourceGroup }} --query [*].id -o tsv) || true
+            # Note: do NOT delete disks here - update_sas_url needs them to export VHDs.
+            # The primary RG (including all disks) is deleted in the delete_resource job.
 
   update_sas_url:
     needs: [ build, verify_the_image ]
