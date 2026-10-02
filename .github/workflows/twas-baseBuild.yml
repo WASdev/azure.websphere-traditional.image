@@ -323,8 +323,6 @@ jobs:
           fi
       - name: Clean up all resources except for vhd storage account
         run: |
-            az image delete --ids \
-              $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
             az vm delete --yes --ids \
               $(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
             az network nic delete --ids \
