@@ -102,10 +102,17 @@ else
     exit 1
 fi
 
+# Diagnostic: list what V9WASBASE actually contains
+echo "--- Packages in V9WASBASE ---"
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
+    -repositories "$BASE_REPOSITORY_URL" \
+    -secureStorageFile storage_file || true
+echo "--- Plug-ins in V9WASBASE (searching for was.launcher/moreinfo/install.path) ---"
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
+    -repositories "$BASE_REPOSITORY_URL" \
+    -secureStorageFile storage_file 2>&1 | grep -iE "launcher|moreinfo|install.path|plug-in" || echo "(none found)"
+
 # Install IBM WebSphere Application Server Base V9 using IBM Installation Manager
-# BASE_REPOSITORY_URL (V9WASBASE) provides the BASE-specific installer plug-ins:
-#   com.ibm.was.launcher.v90, com.ibm.was.base.moreinfo.v90, com.ibm.was.install.path.check.v90
-# REPOSITORY_URL (entitled) provides the package itself.
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
     "$WAS_BASE_TRADITIONAL" \
     "$IBM_JAVA_SDK" \
