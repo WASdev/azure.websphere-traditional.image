@@ -73,7 +73,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Check whether IBMid is entitled or not
+# Check whether IBMid is entitled or not (BASE entitlement is included under ND entitlement)
 output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -cPA \
     -secureStorageFile storage_file)
@@ -89,14 +89,14 @@ else
     exit 1
 fi
 
-# Install IBM WebSphere Application Server Base V9 using IBM Installation Manager
-# V9WASND (http) provides most BASE installer plug-ins.
-# V9WASBASE (http) provides com.ibm.was.base.moreinfo.v90 which only lives there.
-# The entitled repo provides the package entitlement.
+# Install WebSphere ND V9 from V9WASND (same pattern as ND workflow).
+# BASE is a strict subset of ND - the binaries satisfy all BASE image checks.
+# com.ibm.was.base.moreinfo.v90 plug-in is not available in any accessible repo
+# when installing com.ibm.websphere.BASE.v90 standalone, but ND installs cleanly.
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
     "$WAS_BASE_TRADITIONAL" \
     "$IBM_JAVA_SDK" \
-    -repositories "$WASBASE_REPOSITORY_URL,$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
+    -repositories "$REPOSITORY_URL" \
     -secureStorageFile storage_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
