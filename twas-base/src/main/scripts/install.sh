@@ -90,9 +90,8 @@ else
 fi
 
 # Install IBM WebSphere Application Server V9 using IBM Installation Manager
-# Install from base repository only to avoid version resolution conflicts with the entitled repo
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" \
-    -repositories "$BASE_REPOSITORY_URL" \
+    -repositories "$REPOSITORY_URL" \
     -secureStorageFile storage_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
