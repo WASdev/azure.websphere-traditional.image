@@ -62,26 +62,13 @@ unzip -q "$IM_INSTALL_KIT" -d im_installer
 chmod -R 755 ./im_installer/*
 ./im_installer/installc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
-# Save credentials to secure storage:
-# - Passport Advantage covers the entitled repo (entitlement check + package download)
-# - V9WASBASE requires an explicit -url credential for the BASE installer plug-ins
-#   (com.ibm.was.launcher.v90, com.ibm.was.base.moreinfo.v90, com.ibm.was.install.path.check.v90)
-#   which only exist in V9WASBASE, not in the entitled repo
+# Save credentials to secure storage using Passport Advantage (same as ND)
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
     -secureStorageFile storage_file \
     -userName "$userName" -userPassword "$password" \
     -passportAdvantage
 if [ $? -ne 0 ]; then
     echo "$(date): Cannot connect to Passport Advantage."
-    rm -rf storage_file log_file
-    exit 1
-fi
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
-    -secureStorageFile storage_file \
-    -userName "$userName" -userPassword "$password" \
-    -url "$BASE_REPOSITORY_URL"
-if [ $? -ne 0 ]; then
-    echo "$(date): Cannot save credential for BASE repository."
     rm -rf storage_file log_file
     exit 1
 fi
@@ -102,21 +89,17 @@ else
     exit 1
 fi
 
-# Diagnostic: list what V9WASBASE actually contains
-echo "--- Packages in V9WASBASE ---"
+# Diagnostic: show what version imcl will resolve for unversioned BASE from entitled repo
+echo "--- BASE packages in entitled repo (no trailing slash) ---"
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
-    -repositories "$BASE_REPOSITORY_URL" \
-    -secureStorageFile storage_file || true
-echo "--- Plug-ins in V9WASBASE (searching for was.launcher/moreinfo/install.path) ---"
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
-    -repositories "$BASE_REPOSITORY_URL" \
-    -secureStorageFile storage_file 2>&1 | grep -iE "launcher|moreinfo|install.path|plug-in" || echo "(none found)"
+    -cPA \
+    -secureStorageFile storage_file | grep -E "BASE\.v90|java\.jdk"
 
 # Install IBM WebSphere Application Server Base V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
     "$WAS_BASE_TRADITIONAL" \
     "$IBM_JAVA_SDK" \
-    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
+    -repositories "$REPOSITORY_URL" \
     -secureStorageFile storage_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
