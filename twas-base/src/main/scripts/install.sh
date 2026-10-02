@@ -110,12 +110,11 @@ ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -masterPasswordFile master_password_file | grep -E "BASE\.v90|java\.jdk"
 
 # Install IBM WebSphere Application Server V9 using IBM Installation Manager
-# BASE_REPOSITORY_URL (V9WASND) provides installer plug-ins; REPOSITORY_URL provides entitlement
-# Use exact package IDs (no version suffix) so imcl resolves from the repo without a min-version constraint,
-# then restrict to only what V9WASND carries by not including the entitled repo during install.
+# Use V9WASND as base repo (contains installer plug-ins) with entitled repo for entitlement.
+# Install latest available version - 9.0.5029 in V9WASND has intact plug-ins unlike 9.0.5028.
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
-    "com.ibm.websphere.BASE.v90,9.0.5000.20190610_1342" \
-    "com.ibm.java.jdk.v8,8.0.8011.20231027_0741" \
+    com.ibm.websphere.BASE.v90 \
+    com.ibm.java.jdk.v8 \
     -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file -masterPasswordFile master_password_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
