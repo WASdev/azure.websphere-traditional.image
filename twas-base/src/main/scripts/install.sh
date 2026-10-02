@@ -62,13 +62,18 @@ unzip -q "$IM_INSTALL_KIT" -d im_installer
 chmod -R 755 ./im_installer/*
 ./im_installer/installc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
-# Save credentials to secure storage for entitled repository
+# Save credentials to secure storage for entitled and base repositories
 echo "IMmasterPassword" > master_password_file
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
     -secureStorageFile storage_file \
     -masterPasswordFile master_password_file \
     -userName "$userName" -userPassword "$password" \
     -url "$REPOSITORY_URL"
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
+    -secureStorageFile storage_file \
+    -masterPasswordFile master_password_file \
+    -userName "$userName" -userPassword "$password" \
+    -url "$BASE_REPOSITORY_URL"
 if [ $? -ne 0 ]; then
     echo "$(date): Cannot connect to Passport Advantage."
     rm -rf storage_file log_file master_password_file
@@ -92,10 +97,12 @@ else
     exit 1
 fi
 
-# List available BASE packages in V9WASBASE and entitled repositories for diagnostics
-echo "Available BASE and JDK packages in V9WASBASE repository:"
+# List available BASE packages in V9WASND and entitled repositories for diagnostics
+echo "Available BASE and JDK packages in V9WASND repository:"
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
-    -repositories "$BASE_REPOSITORY_URL" | grep -E "BASE\.v90|java\.jdk"
+    -repositories "$BASE_REPOSITORY_URL" \
+    -secureStorageFile storage_file \
+    -masterPasswordFile master_password_file | grep -E "BASE\.v90|java\.jdk"
 echo "Available BASE and JDK packages in entitled repository:"
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
     -repositories "$REPOSITORY_URL" \
