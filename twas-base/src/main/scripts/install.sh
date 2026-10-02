@@ -89,6 +89,12 @@ else
     exit 1
 fi
 
+# List available packages for diagnostics
+echo "Available packages in entitled repository:"
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
+    -cPA \
+    -secureStorageFile storage_file | grep -E "BASE|java.jdk"
+
 # Install IBM WebSphere Application Server V9 using IBM Installation Manager
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" \
     -repositories "$REPOSITORY_URL" \
