@@ -412,9 +412,8 @@ jobs:
           name: sasurl-twasbase
           path: sas-url-twasbase.txt
       - name: Update offer sas url and version
-        uses: microsoft/microsoft-partner-center-github-action@v3.2
         if: ${{ inputs.updateOfferArtifact == true && needs.build.outputs.imageVersionNumber != '' }}
-        with:
+        env:
           offerId: ${{ env.offerId }}
           planId: ${{ env.planId }}
           clientId: ${{ env.clientId }}
@@ -422,12 +421,104 @@ jobs:
           secretValue: ${{ env.secretValue }}
           imageType: ${{ env.imageType }}
           imageVersionNumber: ${{ needs.build.outputs.imageVersionNumber }}
-          offerType: ${{ env.offerType }}
           operatingSystemFamily: ${{ env.operatingSystemFamily }}
           operatingSystemType: ${{ env.operatingSystemType }}
-          osDiskSasUrl: ${{steps.sas_url.outputs.osDiskSasUrl}}
-          dataDiskSasUrl: ${{steps.sas_url.outputs.dataDiskSasUrl}}
-          verbose: "false"
+          osDiskSasUrl: ${{ steps.sas_url.outputs.osDiskSasUrl }}
+          dataDiskSasUrl: ${{ steps.sas_url.outputs.dataDiskSasUrl }}
+        run: |
+          # Obtain Partner Center token
+          tokenJson=$(curl --fail -s -X POST \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=${clientId}&client_secret=${secretValue}&resource=https://graph.microsoft.com" \
+            "https://login.microsoftonline.com/${tenantId}/oauth2/token")
+          token=$(echo "$tokenJson" | jq -r '.access_token')
+
+          # Get product durable ID
+          productJson=$(curl --fail -s -X GET \
+            "https://graph.microsoft.com/rp/product-ingestion/product?externalId=${offerId}" \
+            -H "Authorization: Bearer ${token}")
+          productDurableId=$(echo "$productJson" | jq -r '.value[0].id')
+
+          # Get plan durable ID
+          planJson=$(curl --fail -s -X GET \
+            "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productDurableId}&externalId=${planId}" \
+            -H "Authorization: Bearer ${token}")
+          planDurableId=$(echo "$planJson" | jq -r '.value[0].id')
+
+          # Extract bare IDs (strip leading resource-type prefix)
+          productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
+          planIdWithoutPrefix=$(echo "$planDurableId" | cut -d'/' -f3)
+
+          # Get existing tech config - treat 400 (new/empty plan) as empty image list
+          techConfigResponse=$(curl -s -o /tmp/techconfig.json -w "%{http_code}" -X GET \
+            "https://graph.microsoft.com/rp/product-ingestion/virtual-machine-plan-technical-configuration/${productIdWithoutPrefix}/${planIdWithoutPrefix}" \
+            -H "Authorization: Bearer ${token}")
+          if [ "$techConfigResponse" = "200" ]; then
+            imageVersions=$(jq -r '.vmImageVersions' /tmp/techconfig.json)
+          else
+            echo "Tech config GET returned ${techConfigResponse} (new plan) - seeding empty image versions array."
+            imageVersions="[]"
+          fi
+
+          # Append new image version
+          imageVersionsAppended=$(echo "$imageVersions" | jq \
+            --arg vNum  "$imageVersionNumber" \
+            --arg type  "$imageType" \
+            --arg osUrl "$osDiskSasUrl" \
+            --arg dataUrl "$dataDiskSasUrl" \
+            '. += [{"versionNumber":$vNum,"vmImages":[{"imageType":$type,"source":{"sourceType":"sasUri","osDisk":{"uri":$osUrl},"dataDisks":[{"lunNumber":0,"uri":$dataUrl}]}}]}]')
+
+          # Build request payload
+          requestData=$(jq -n \
+            --arg schema   "https://schema.mp.microsoft.com/schema/configure/2022-03-01-preview2" \
+            --arg tcSchema "https://schema.mp.microsoft.com/schema/virtual-machine-plan-technical-configuration/2022-03-01-preview3" \
+            --arg offerId  "$offerId" \
+            --arg planId   "$planId" \
+            --arg osFamily "$operatingSystemFamily" \
+            --arg osType   "$operatingSystemType" \
+            --arg imgType  "$imageType" \
+            --argjson imageVersions "$imageVersionsAppended" \
+            '{
+              "$schema": $schema,
+              "resources": [{
+                "$schema": $tcSchema,
+                "product": {"externalId": $offerId},
+                "plan":    {"externalId": $planId},
+                "operatingSystem": {"family": $osFamily, "type": $osType},
+                "skus": [{"imageType": $imgType, "skuId": $planId}],
+                "vmImageVersions": $imageVersions
+              }]
+            }')
+
+          # POST configuration
+          response=$(curl --fail -s -X POST \
+            "https://graph.microsoft.com/rp/product-ingestion/configure" \
+            -H "Content-Type: application/json" \
+            -H "accept: application/json" \
+            -H "Authorization: Bearer ${token}" \
+            -d "$requestData")
+          jobId=$(echo "$response" | jq -r '.jobId')
+          echo "Submitted configuration job: ${jobId}"
+
+          # Poll until complete (up to 10 attempts x 30s)
+          attempt=0
+          result="pending"
+          while [ "$result" = "pending" ] && [ $attempt -le 10 ]; do
+            sleep 30
+            jobStatusJson=$(curl --fail -s -X GET \
+              "https://graph.microsoft.com/rp/product-ingestion/configure/${jobId}/status" \
+              -H "Authorization: Bearer ${token}")
+            result=$(echo "$jobStatusJson" | jq -r '.jobResult')
+            echo "Job ${jobId} status: $(echo "$jobStatusJson" | jq -r '.jobStatus') / result: ${result}"
+            attempt=$((attempt + 1))
+          done
+
+          if [ "$result" != "succeeded" ]; then
+            echo "Partner Center job failed or timed out. Final status:"
+            echo "$jobStatusJson" | jq .
+            exit 1
+          fi
+          echo "Partner Center image version ${imageVersionNumber} submitted successfully."
 
   summary:
     needs: [build, verify_the_image, update_sas_url]
