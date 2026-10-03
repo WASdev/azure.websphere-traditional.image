@@ -369,35 +369,32 @@ jobs:
             --name vhds --permissions racwdl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
 
           imageJson=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} -o json)
-          echo "Image storageProfile: $(echo "$imageJson" | jq '.storageProfile')"
 
           osDiskId=$(echo "$imageJson" | jq -r '.storageProfile.osDisk.managedDisk.id // empty')
           if [ -z "$osDiskId" ]; then
             echo "ERROR: osDiskId is empty"; echo "Image JSON: $imageJson"; exit 1
           fi
-          osDiskSasAccess=$(az disk grant-access --ids "$osDiskId" --access-level Read --duration-in-seconds 3600 --query accessSas -o tsv 2>&1 || true)
-          if [ -z "$osDiskSasAccess" ] || echo "$osDiskSasAccess" | grep -q "ERROR"; then
-            echo "grant-access failed ($osDiskSasAccess), falling back to disk export"
-            osDiskSasAccess=$(az disk export --ids "$osDiskId" --duration-in-seconds 3600 --query "accessSas" -o tsv)
-          fi
-          if [ -z "$osDiskSasAccess" ]; then echo "ERROR: osDiskSasAccess is empty after fallback"; exit 1; fi
+          az snapshot create -g ${{ env.testResourceGroup }} -n snap-os --source "$osDiskId"
+          osDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-os --duration-in-seconds 3600 --query accessSas -o tsv)
+          if [ -z "$osDiskSasAccess" ]; then echo "ERROR: osDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$osDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${sasToken}" \
             --blob-type PageBlob
+          az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-os
+          az snapshot delete -g ${{ env.testResourceGroup }} -n snap-os --no-wait
 
           dataDiskId=$(echo "$imageJson" | jq -r '.storageProfile.dataDisks[0].managedDisk.id // empty')
           if [ -z "$dataDiskId" ]; then
             echo "ERROR: dataDiskId is empty"; echo "Image JSON: $imageJson"; exit 1
           fi
-          dataDiskSasAccess=$(az disk grant-access --ids "$dataDiskId" --access-level Read --duration-in-seconds 3600 --query accessSas -o tsv 2>&1 || true)
-          if [ -z "$dataDiskSasAccess" ] || echo "$dataDiskSasAccess" | grep -q "ERROR"; then
-            echo "grant-access failed ($dataDiskSasAccess), falling back to disk export"
-            dataDiskSasAccess=$(az disk export --ids "$dataDiskId" --duration-in-seconds 3600 --query "accessSas" -o tsv)
-          fi
-          if [ -z "$dataDiskSasAccess" ]; then echo "ERROR: dataDiskSasAccess is empty after fallback"; exit 1; fi
+          az snapshot create -g ${{ env.testResourceGroup }} -n snap-data --source "$dataDiskId"
+          dataDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-data --duration-in-seconds 3600 --query accessSas -o tsv)
+          if [ -z "$dataDiskSasAccess" ]; then echo "ERROR: dataDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$dataDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${sasToken}" \
             --blob-type PageBlob
+          az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-data
+          az snapshot delete -g ${{ env.testResourceGroup }} -n snap-data --no-wait
 
           blobStorageEndpoint=$(az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob')
           osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasToken
