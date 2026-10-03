@@ -399,8 +399,8 @@ jobs:
           dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
 
           echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url-ihs.txt
-          echo "##[set-output name=osDiskSasUrl;]${osDiskSasUrl}"
-          echo "##[set-output name=dataDiskSasUrl;]${dataDiskSasUrl}"
+          echo "osDiskSasUrl=${osDiskSasUrl}" >> $GITHUB_OUTPUT
+          echo "dataDiskSasUrl=${dataDiskSasUrl}" >> $GITHUB_OUTPUT
       - name: Upload SAS url
         uses: actions/upload-artifact@v4
         with:
