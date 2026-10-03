@@ -57,7 +57,7 @@ env:
   accessToken: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
   twasClusterRepo: ${{ secrets.USER_NAME }}/azure.websphere-traditional.cluster
   offerId: "2023-03-27-ihs-base-image"
-  planId: "2023-03-27-ihs-base-image"
+  planId: "2023-03-27-ihs-base-image-gen2"
   offerType: "vm_image_offer"
   clientId: ${{ secrets.CLIENT_ID }}
   secretValue: ${{ secrets.SECRET_VALUE }}

@@ -57,7 +57,7 @@ env:
   accessToken: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
   twasSingleRepo: ${{ secrets.USER_NAME }}/azure.websphere-traditional.singleserver
   offerId: "2023-03-27-twas-single-server-base-image"
-  planId: "2023-03-27-twas-single-server-base-image"
+  planId: "2023-03-27-twas-single-server-base-image-gen2"
   offerType: "vm_image_offer"
   clientId: ${{ secrets.CLIENT_ID }}
   secretValue: ${{ secrets.SECRET_VALUE }}
@@ -378,7 +378,7 @@ jobs:
             echo "ERROR: osDiskId is empty"; echo "Image JSON: $imageJson"; exit 1
           fi
           az snapshot create -g ${{ env.testResourceGroup }} -n snap-os --source "$osDiskId"
-          osDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-os --duration-in-seconds 3600 --query accessSas -o tsv)
+          osDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-os --duration-in-seconds 3600 --query accessSAS -o tsv)
           if [ -z "$osDiskSasAccess" ]; then echo "ERROR: osDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$osDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${sasToken}" \
@@ -391,7 +391,7 @@ jobs:
             echo "ERROR: dataDiskId is empty"; echo "Image JSON: $imageJson"; exit 1
           fi
           az snapshot create -g ${{ env.testResourceGroup }} -n snap-data --source "$dataDiskId"
-          dataDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-data --duration-in-seconds 3600 --query accessSas -o tsv)
+          dataDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-data --duration-in-seconds 3600 --query accessSAS -o tsv)
           if [ -z "$dataDiskSasAccess" ]; then echo "ERROR: dataDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$dataDiskSasAccess" \
             "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${sasToken}" \
