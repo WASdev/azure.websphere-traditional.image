@@ -107,17 +107,17 @@ jobs:
           echo "MAVEN_USERNAME=${MAVEN_USERNAME}" >> "$GITHUB_ENV"
           echo "MAVEN_TOKEN=${MAVEN_TOKEN}" >> "$GITHUB_ENV"
       - name: Checkout arm-ttk
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: Azure/arm-ttk
           path: arm-ttk
       - name: Checkout ${{ env.repoName }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ env.repoName }}
           ref: ${{ github.event.inputs.ref }}
       - name: Azure login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ env.azureCredentials }}
       - name: Build ${{ env.repoName }}
@@ -159,7 +159,7 @@ jobs:
             --scripts "cat /var/lib/waagent/custom-script/download/0/stderr 2>/dev/null || echo '(stderr not found)'" \
             --query 'value[0].message' -o tsv || true
       - name: Query public IP of VM
-        uses: azure/CLI@v1
+        uses: azure/CLI@v2
         with:
           azcliversion: ${{ env.azCliVersion }}
           inlineScript: |
@@ -220,12 +220,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ${{ env.repoName }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ env.repoName }}
           ref: ${{ github.event.inputs.ref }}
       - name: Azure login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ env.azureCredentials }}
       - name: Verify the image
@@ -341,7 +341,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Azure login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ env.azureCredentials }}
       - name: Generate SAS url
@@ -444,7 +444,7 @@ jobs:
     if: always()
     steps:
       - name: Azure login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ env.azureCredentials }}
       - name: Delete resource groups during verification
