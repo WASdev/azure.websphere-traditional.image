@@ -131,13 +131,16 @@ jobs:
             clean install --file ${{ env.repoName }}/twas-base/pom.xml
       - name: Delete any stale resource groups from prior runs
         run: |
-          staleGroups=$(az group list --query "[?starts_with(name,'IMAGETEST-WASDEV-') && ends_with(name,'-twasBase')].name" -o tsv || true)
+          staleGroups=$(az group list --query "[?starts_with(name,'IMAGETEST-WASDEV-')].name" -o tsv 2>/dev/null \
+            | grep -i 'twasbase$' || true)
           for rgName in $staleGroups; do
-            if [[ "$rgName" != "${{ env.testResourceGroup }}" ]]; then
+            if [[ "${rgName,,}" != "${testResourceGroup,,}" ]]; then
               echo "Deleting stale resource group: $rgName"
               az group delete --name "$rgName" --yes --no-wait || true
             fi
           done
+        env:
+          testResourceGroup: ${{ env.testResourceGroup }}
       - name: Deploy a RHEL 9.x VM and install twas Base server
         run: |
           cd ${{ env.repoName }}/twas-base/target/cli

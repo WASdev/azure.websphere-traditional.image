@@ -131,13 +131,16 @@ jobs:
             clean install --file ${{ env.repoName }}/ihs/pom.xml
       - name: Delete any stale resource groups from prior runs
         run: |
-          staleGroups=$(az group list --query "[?starts_with(name,'IMAGETEST-WASDEV-') && ends_with(name,'-ihs')].name" -o tsv || true)
+          staleGroups=$(az group list --query "[?starts_with(name,'IMAGETEST-WASDEV-')].name" -o tsv 2>/dev/null \
+            | grep -i 'ihs$' || true)
           for rgName in $staleGroups; do
-            if [[ "$rgName" != "${{ env.testResourceGroup }}" ]]; then
+            if [[ "${rgName,,}" != "${testResourceGroup,,}" ]]; then
               echo "Deleting stale resource group: $rgName"
               az group delete --name "$rgName" --yes --no-wait || true
             fi
           done
+        env:
+          testResourceGroup: ${{ env.testResourceGroup }}
       - name: Deploy a RHEL 9.x VM and install IHS server
         run: |
           cd ${{ env.repoName }}/ihs/target/cli
@@ -334,64 +337,15 @@ jobs:
       - name: Generate SAS url
         id: sas_url
         run: |
-          # Install azcopy
-          wget -q https://aka.ms/downloadazcopy-v10-linux -O azcopy.tar.gz
-          tar -xzf azcopy.tar.gz --strip-components=1
-          chmod +x azcopy
-
           # Get a minus-24-hour date and a plus-30-day date for the SAS token
-          minus24HoursUtc=$(date -u --date "$(date -u) -24 hour" +%Y-%m-%dT%H:%MZ)
-          plus30DaysUtc=$(date -u --date "$(date -u) 30 day" +%Y-%m-%dT%H:%MZ)
+          dte=$(date -u)
+          minus24HoursUtc=$(date -u --date "$dte -24 hour" +%Y-%m-%dT%H:%MZ)
+          plus30DaysUtc=$(date -u --date "$dte 30 day" +%Y-%m-%dT%H:%MZ)
 
           vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
-          echo "vhdStorageAccountAccessKey length: ${#vhdStorageAccountAccessKey}"
-          if [ -z "$vhdStorageAccountAccessKey" ]; then echo "ERROR: vhdStorageAccountAccessKey is empty"; exit 1; fi
-
-          # Create the vhds container if it does not exist
-          az storage container create \
-            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
-            --name vhds
-
-          # Generate container SAS token (used for both azcopy destinations and Partner Center)
-          # Strip any surrounding quotes that az cli may add
           sasToken=$(az storage container generate-sas \
             --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
-            --name vhds --permissions racwdl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv | tr -d '"')
-          echo "sasToken length: ${#sasToken}"
-          if [ -z "$sasToken" ]; then echo "ERROR: sasToken is empty"; exit 1; fi
-
-          # Export OS and data disks from the managed image to blob storage.
-          # Managed image disks cannot have SAS access granted directly (they are not
-          # in Unattached state). Snapshot each disk first, grant access on the snapshot,
-          # copy the VHD, then delete the snapshot.
-          imageJson=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} -o json)
-
-          osDiskId=$(echo "$imageJson" | jq -r '.storageProfile.osDisk.managedDisk.id // empty')
-          if [ -z "$osDiskId" ]; then
-            echo "ERROR: osDiskId is empty"; echo "Image JSON: $imageJson"; exit 1
-          fi
-          az snapshot create -g ${{ env.testResourceGroup }} -n snap-os --source "$osDiskId"
-          osDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-os --duration-in-seconds 3600 --query accessSas -o tsv)
-          if [ -z "$osDiskSasAccess" ]; then echo "ERROR: osDiskSasAccess is empty"; exit 1; fi
-          ./azcopy copy "$osDiskSasAccess" \
-            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${sasToken}" \
-            --blob-type PageBlob
-          az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-os
-          az snapshot delete -g ${{ env.testResourceGroup }} -n snap-os --no-wait
-
-          dataDiskId=$(echo "$imageJson" | jq -r '.storageProfile.dataDisks[0].managedDisk.id // empty')
-          if [ -z "$dataDiskId" ]; then
-            echo "ERROR: dataDiskId is empty"; echo "Image JSON: $imageJson"; exit 1
-          fi
-          az snapshot create -g ${{ env.testResourceGroup }} -n snap-data --source "$dataDiskId"
-          dataDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-data --duration-in-seconds 3600 --query accessSas -o tsv)
-          if [ -z "$dataDiskSasAccess" ]; then echo "ERROR: dataDiskSasAccess is empty"; exit 1; fi
-          ./azcopy copy "$dataDiskSasAccess" \
-            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${sasToken}" \
-            --blob-type PageBlob
-          az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-data
-          az snapshot delete -g ${{ env.testResourceGroup }} -n snap-data --no-wait
-
+            --name vhds --permissions rl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
           blobStorageEndpoint=$(az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob')
           osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasToken
           dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
