@@ -446,10 +446,15 @@ jobs:
           productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
 
           # Get plan durable ID (use bare product ID in query)
-          planJson=$(curl --fail -s -X GET \
+          planJson=$(curl -s -X GET \
             "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productIdWithoutPrefix}&externalId=${planId}" \
             -H "Authorization: Bearer ${token}")
+          echo "planJson: ${planJson}"
           planDurableId=$(echo "$planJson" | jq -r '.value[0].id')
+          if [ -z "$planDurableId" ] || [ "$planDurableId" = "null" ]; then
+            echo "ERROR: Could not resolve planId '${planId}' for product '${productIdWithoutPrefix}'."
+            exit 1
+          fi
           echo "planDurableId: ${planDurableId}"
 
           # Extract bare plan ID (format: product/PUUID/plan/PLANUUID → field 4)
