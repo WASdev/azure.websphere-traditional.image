@@ -434,7 +434,7 @@ jobs:
 
           # Extract bare IDs (strip leading resource-type prefix)
           productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
-          planIdWithoutPrefix=$(echo "$planDurableId" | cut -d'/' -f3)
+          planIdWithoutPrefix=$(echo "$planDurableId" | cut -d'/' -f4)
 
           # Get existing tech config - treat 400 (new/empty plan) as empty image list
           techConfigResponse=$(curl -s -o /tmp/techconfig.json -w "%{http_code}" -X GET \
@@ -472,7 +472,7 @@ jobs:
                 "product": {"externalId": $offerId},
                 "plan":    {"externalId": $planId},
                 "operatingSystem": {"family": $osFamily, "type": $osType},
-                "skus": [{"imageType": $imgType, "skuId": $planId}],
+                "skus": [{"imageType": $imgType, "skuId": $imgType}],
                 "vmImageVersions": $imageVersions
               }]
             }')
