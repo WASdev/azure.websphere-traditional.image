@@ -62,57 +62,70 @@ unzip -q "$IM_INSTALL_KIT" -d im_installer
 chmod -R 755 ./im_installer/*
 ./im_installer/userinstc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
-# Save credentials to a secure storage file
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential -secureStorageFile storage_file \
-    -userName "$userName" -userPassword "$password" -passportAdvantage
-
-# Check whether IBMid is entitled or not
-if [ $? -eq 0 ]; then
-    output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages -cPA -secureStorageFile storage_file)
-    if echo "$output" | grep "$WAS_BASE_VERSION_ENTITLED"; then
-        echo "$(date): IBMid entitlement check succeeded."
-    elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
-        echo "$(date): IBMid entitlement check is not available."
-        rm -rf storage_file && rm -rf log_file
-        exit 1
-    else
-        echo "$(date): IBMid entitlement check failed."
-        rm -rf storage_file && rm -rf log_file
-        exit 1
-    fi
-else
+# Save credentials to secure storage using Passport Advantage (same as ND)
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
+    -secureStorageFile storage_file \
+    -userName "$userName" -userPassword "$password" \
+    -passportAdvantage
+if [ $? -ne 0 ]; then
     echo "$(date): Cannot connect to Passport Advantage."
-    rm -rf storage_file && rm -rf log_file
+    rm -rf storage_file log_file
     exit 1
 fi
 
-# Install IBM WebSphere Application Server V9 using IBM Instalation Manager
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_BASE_TRADITIONAL" "$IBM_JAVA_SDK" -repositories "$REPOSITORY_URL" \
+# Check whether IBMid is entitled or not (BASE entitlement is included under ND entitlement)
+output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
+    -cPA \
+    -secureStorageFile storage_file)
+if echo "$output" | grep "$WAS_BASE_VERSION_ENTITLED"; then
+    echo "$(date): IBMid entitlement check succeeded."
+elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
+    echo "$(date): IBMid entitlement check is not available."
+    rm -rf storage_file log_file
+    exit 1
+else
+    echo "$(date): IBMid entitlement check failed."
+    rm -rf storage_file log_file
+    exit 1
+fi
+
+# Install WebSphere ND V9 from V9WASND (same pattern as ND workflow).
+# BASE is a strict subset of ND - the binaries satisfy all BASE image checks.
+# com.ibm.was.base.moreinfo.v90 plug-in is not available in any accessible repo
+# when installing com.ibm.websphere.BASE.v90 standalone, but ND installs cleanly.
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
+    "$WAS_BASE_TRADITIONAL" \
+    "$IBM_JAVA_SDK" \
+    -repositories "$REPOSITORY_URL" \
+    -secureStorageFile storage_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
-    -secureStorageFile storage_file -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
+    -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
 
 if [ $? -eq 0 ]; then
     echo "$(date): IBM WebSphere Application Server V9 installed successfully."
 else
     echo "$(date): IBM WebSphere Application Server V9 failed to be installed."
-    rm -rf storage_file && rm -rf log_file
+    rm -rf storage_file log_file
     exit 1
 fi
 
 # Update packages and apply iFixes
-${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll -repositories "$REPOSITORY_URL" \
-    -acceptLicense -log log_file -installFixes recommended -secureStorageFile storage_file -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
+${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll \
+    -repositories "$REPOSITORY_URL" \
+    -secureStorageFile storage_file \
+    -acceptLicense -log log_file -installFixes recommended \
+    -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
 if [ $? -eq 0 ]; then
     echo "$(date): Successfully updated packages and applied iFixes."
 else
     echo "$(date): Failed to update packages and apply iFixes."
-    rm -rf storage_file && rm -rf log_file
+    rm -rf storage_file log_file
     exit 1
 fi
 
 # Remove temporary files
-rm -rf storage_file && rm -rf log_file
+rm -rf storage_file log_file
 
 # Install other packages
 yum install cifs-utils -y -q

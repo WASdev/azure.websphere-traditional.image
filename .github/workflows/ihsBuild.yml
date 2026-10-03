@@ -48,7 +48,7 @@ env:
   unEntitledIbmPassword: ${{ secrets.UNENTITLED_IBM_USER_PWD }}
   vmAdminId: ${{ secrets.VM_ADMIN_ID }}
   vmAdminPassword: ${{ secrets.VM_ADMIN_PASSWORD }}
-  testResourceGroup: imageTest-${{ github.repository_owner }}-${{ github.run_id }}-${{ github.run_number }}-ihs
+  testResourceGroup: IMAGETEST-WASDEV-${{ github.repository_owner }}-${{ github.run_id }}-${{ github.run_number }}-ihs
   vmName: vm-${{ github.run_id }}-${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
   location: eastus
@@ -57,12 +57,12 @@ env:
   accessToken: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
   twasClusterRepo: ${{ secrets.USER_NAME }}/azure.websphere-traditional.cluster
   offerId: "2023-03-27-ihs-base-image"
-  planId: "2023-03-27-ihs-base-image"
+  planId: "2023-03-27-ihs-base-image-gen2"
   offerType: "vm_image_offer"
   clientId: ${{ secrets.CLIENT_ID }}
   secretValue: ${{ secrets.SECRET_VALUE }}
   tenantId: ${{ secrets.TENANT_ID }}
-  imageType: "x64Gen1"
+  imageType: "x64Gen2"
   operatingSystemFamily: "linux"
   operatingSystemType: "redHat"
   AZURE_CORE_USE_MSAL_HTTP_CACHE: "false"
@@ -91,7 +91,7 @@ jobs:
           fi
           echo "imageVersionNumber=${imageVersionNumber}" >> $GITHUB_OUTPUT
       - name: Set up JDK 11
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v5
         with:
           distribution: 'microsoft'
           java-version: '11'
@@ -107,17 +107,17 @@ jobs:
           echo "MAVEN_USERNAME=${MAVEN_USERNAME}" >> "$GITHUB_ENV"
           echo "MAVEN_TOKEN=${MAVEN_TOKEN}" >> "$GITHUB_ENV"
       - name: Checkout arm-ttk
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: Azure/arm-ttk
           path: arm-ttk
       - name: Checkout ${{ env.repoName }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ env.repoName }}
           ref: ${{ github.event.inputs.ref }}
       - name: Azure login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ env.azureCredentials }}
       - name: Build ${{ env.repoName }}
@@ -129,13 +129,25 @@ jobs:
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
             clean install --file ${{ env.repoName }}/ihs/pom.xml
+      - name: Delete any stale resource groups from prior runs
+        run: |
+          staleGroups=$(az group list --query "[?starts_with(name,'IMAGETEST-WASDEV-')].name" -o tsv 2>/dev/null \
+            | grep -i 'ihs$' || true)
+          for rgName in $staleGroups; do
+            if [[ "${rgName,,}" != "${testResourceGroup,,}" ]]; then
+              echo "Deleting stale resource group: $rgName"
+              az group delete --name "$rgName" --yes --no-wait || true
+            fi
+          done
+        env:
+          testResourceGroup: ${{ env.testResourceGroup }}
       - name: Deploy a RHEL 9.x VM and install IHS server
         run: |
           cd ${{ env.repoName }}/ihs/target/cli
           chmod a+x deploy.azcli
           ./deploy.azcli -n testDeployment -g ${{ env.testResourceGroup }} -l ${{ env.location }}
       - name: Query public IP of VM
-        uses: azure/CLI@v1
+        uses: azure/CLI@v2
         with:
           azcliversion: ${{ env.azCliVersion }}
           inlineScript: |
@@ -189,19 +201,19 @@ jobs:
         run: |
           az vm deallocate --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
           az vm generalize --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }}
-          az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }}
+          az image create --resource-group ${{ env.testResourceGroup }} --name ${{ env.vmName }} --source ${{ env.vmName }} --hyper-v-generation V2
 
   verify_the_image:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ${{ env.repoName }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ env.repoName }}
           ref: ${{ github.event.inputs.ref }}
       - name: Azure login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ env.azureCredentials }}
       - name: Verify the image
@@ -231,16 +243,18 @@ jobs:
             fi
           done
       - name: Verify the image with twas-cluster integration-test pipeline
-        if: ${{ !inputs.skipIntegrationTests }}
+        if: ${{ !inputs.skipIntegrationTests && env.ndImageResourceId != '' }}
         run: |
           # Trigger the workflow run
-          requestData={\"ref\":\"${GITHUB_REF_NAME}\",\"inputs\":{\"databaseType\":\"none\",\"ndImageResourceId\":\"${ndImageResourceId}\",\"ihsImageResourceId\":\"${ihsImageResourceId}\",\"location\":\"${{ env.location }}\"}}
+          #requestData={\"ref\":\"${GITHUB_REF_NAME}\",\"inputs\":{\"databaseType\":\"none\",\"ndImageResourceId\":\"${ndImageResourceId}\",\"ihsImageResourceId\":\"${ihsImageResourceId}\",\"location\":\"${{ env.location }}\"}}
+          requestData=$(jq -n --arg ref "main" --arg databaseType "none" --arg ndImageResourceId "$ndImageResourceId" --arg ihsImageResourceId "$ihsImageResourceId" --arg location "eastus" '{ref: $ref, inputs: {databaseType: $databaseType, ndImageResourceId: $ndImageResourceId, ihsImageResourceId: $ihsImageResourceId, location: $location}}')
+
           curl --fail --verbose -L -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${accessToken}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{ env.twasClusterRepo }}/actions/workflows/integration-test.yaml/dispatches \
-            -d $(echo $requestData | jq -c)
+            -d "$requestData"
 
           # Wait until the workflow run starts
           idAndStatus=$(curl -L \
@@ -299,8 +313,6 @@ jobs:
           fi
       - name: Clean up all resources except for vhd storage account
         run: |
-            az image delete --ids \
-              $(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
             az vm delete --yes --ids \
               $(az vm show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} --query id -o tsv)
             az network nic delete --ids \
@@ -311,45 +323,86 @@ jobs:
               $(az network public-ip list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
             az network nsg delete --ids \
               $(az network nsg list -g ${{ env.testResourceGroup }} --query [0].id -o tsv)
+            # Note: do NOT delete disks here - update_sas_url needs them to export VHDs.
+            # The primary RG (including all disks) is deleted in the delete_resource job.
 
   update_sas_url:
     needs: [build, verify_the_image]
     runs-on: ubuntu-latest
     steps:
       - name: Azure login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ env.azureCredentials }}
       - name: Generate SAS url
         id: sas_url
         run: |
+          # Install azcopy
+          wget -q https://aka.ms/downloadazcopy-v10-linux -O azcopy.tar.gz
+          tar -xzf azcopy.tar.gz --strip-components=1
+          chmod +x azcopy
+
           # Get a minus-24-hour date and a plus-30-day date for the SAS token
-          minus24HoursUtc=$(date -u --date "$dte -24 hour" +%Y-%m-%dT%H:%MZ)
-          plus30DaysUtc=$(date -u --date "$dte 30 day" +%Y-%m-%dT%H:%MZ)
+          minus24HoursUtc=$(date -u --date "$(date -u) -24 hour" +%Y-%m-%dT%H:%MZ)
+          plus30DaysUtc=$(date -u --date "$(date -u) 30 day" +%Y-%m-%dT%H:%MZ)
 
           vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
+
+          # Create the vhds container if it does not exist
+          az storage container create \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --name vhds
+
+          # Generate container SAS token (used for both azcopy destinations and Partner Center)
           sasToken=$(az storage container generate-sas \
             --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
-            --name vhds --permissions rl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
-          blobStorageEndpoint=$( az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob' )
+            --name vhds --permissions racwdl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
+
+          imageJson=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} -o json)
+
+          osDiskId=$(echo "$imageJson" | jq -r '.storageProfile.osDisk.managedDisk.id // empty')
+          if [ -z "$osDiskId" ]; then
+            echo "ERROR: osDiskId is empty"; echo "Image JSON: $imageJson"; exit 1
+          fi
+          az snapshot create -g ${{ env.testResourceGroup }} -n snap-os --source "$osDiskId"
+          osDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-os --duration-in-seconds 3600 --query accessSAS -o tsv)
+          if [ -z "$osDiskSasAccess" ]; then echo "ERROR: osDiskSasAccess is empty"; exit 1; fi
+          ./azcopy copy "$osDiskSasAccess" \
+            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${sasToken}" \
+            --blob-type PageBlob
+          az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-os
+          az snapshot delete -g ${{ env.testResourceGroup }} -n snap-os --no-wait
+
+          dataDiskId=$(echo "$imageJson" | jq -r '.storageProfile.dataDisks[0].managedDisk.id // empty')
+          if [ -z "$dataDiskId" ]; then
+            echo "ERROR: dataDiskId is empty"; echo "Image JSON: $imageJson"; exit 1
+          fi
+          az snapshot create -g ${{ env.testResourceGroup }} -n snap-data --source "$dataDiskId"
+          dataDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-data --duration-in-seconds 3600 --query accessSAS -o tsv)
+          if [ -z "$dataDiskSasAccess" ]; then echo "ERROR: dataDiskSasAccess is empty"; exit 1; fi
+          ./azcopy copy "$dataDiskSasAccess" \
+            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${sasToken}" \
+            --blob-type PageBlob
+          az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-data
+          az snapshot delete -g ${{ env.testResourceGroup }} -n snap-data --no-wait
+
+          blobStorageEndpoint=$(az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob')
           osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasToken
           dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
 
           echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url-ihs.txt
-          echo "##[set-output name=osDiskSasUrl;]${osDiskSasUrl}"
-          echo "##[set-output name=dataDiskSasUrl;]${dataDiskSasUrl}"
+          echo "osDiskSasUrl=${osDiskSasUrl}" >> $GITHUB_OUTPUT
+          echo "dataDiskSasUrl=${dataDiskSasUrl}" >> $GITHUB_OUTPUT
       - name: Upload SAS url
         uses: actions/upload-artifact@v4
         with:
           name: sasurl-ihs
           path: sas-url-ihs.txt
       - name: Update offer sas url and version
-        uses: microsoft/microsoft-partner-center-github-action@v3.2
         if: ${{ inputs.updateOfferArtifact == true && needs.build.outputs.imageVersionNumber != '' }}
-        with:
+        env:
           offerId: ${{ env.offerId }}
           planId: ${{ env.planId }}
-          offerType: ${{ env.offerType }}
           clientId: ${{ env.clientId }}
           tenantId: ${{ env.tenantId }}
           secretValue: ${{ env.secretValue }}
@@ -357,9 +410,120 @@ jobs:
           imageVersionNumber: ${{ needs.build.outputs.imageVersionNumber }}
           operatingSystemFamily: ${{ env.operatingSystemFamily }}
           operatingSystemType: ${{ env.operatingSystemType }}
-          osDiskSasUrl: ${{steps.sas_url.outputs.osDiskSasUrl}}
-          dataDiskSasUrl: ${{steps.sas_url.outputs.dataDiskSasUrl}}
-          verbose: "false"
+          osDiskSasUrl: ${{ steps.sas_url.outputs.osDiskSasUrl }}
+          dataDiskSasUrl: ${{ steps.sas_url.outputs.dataDiskSasUrl }}
+        run: |
+          # Obtain Partner Center token
+          tokenJson=$(curl --fail -s -X POST \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=${clientId}&client_secret=${secretValue}&resource=https://graph.microsoft.com" \
+            "https://login.microsoftonline.com/${tenantId}/oauth2/token")
+          token=$(echo "$tokenJson" | jq -r '.access_token')
+
+          # Get product durable ID
+          productJson=$(curl --fail -s -X GET \
+            "https://graph.microsoft.com/rp/product-ingestion/product?externalId=${offerId}" \
+            -H "Authorization: Bearer ${token}")
+          productDurableId=$(echo "$productJson" | jq -r '.value[0].id')
+          echo "productDurableId: ${productDurableId}"
+
+          # Extract bare product ID (strip "product/" prefix)
+          productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
+
+          # Get plan durable ID (use full durable ID in query)
+          planJson=$(curl -s -X GET \
+            "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productDurableId}&externalId=${planId}" \
+            -H "Authorization: Bearer ${token}")
+          echo "planJson: ${planJson}"
+          planDurableId=$(echo "$planJson" | jq -r '.value[0].id')
+          if [ -z "$planDurableId" ] || [ "$planDurableId" = "null" ]; then
+            echo "ERROR: Could not resolve planId '${planId}' for product '${productIdWithoutPrefix}'."
+            exit 1
+          fi
+          echo "planDurableId: ${planDurableId}"
+
+          # Extract bare plan ID (format: product/PUUID/plan/PLANUUID → field 4)
+          planIdWithoutPrefix=$(echo "$planDurableId" | cut -d'/' -f4)
+          echo "techConfig URL: https://graph.microsoft.com/rp/product-ingestion/virtual-machine-plan-technical-configuration/${productIdWithoutPrefix}/${planIdWithoutPrefix}"
+
+          # Get existing tech config - treat non-200 (new/empty plan) as empty image list
+          techConfigResponse=$(curl -s -o /tmp/techconfig.json -w "%{http_code}" -X GET \
+            "https://graph.microsoft.com/rp/product-ingestion/virtual-machine-plan-technical-configuration/${productIdWithoutPrefix}/${planIdWithoutPrefix}" \
+            -H "Authorization: Bearer ${token}")
+          echo "Tech config GET response: ${techConfigResponse}"
+          if [ "$techConfigResponse" = "200" ]; then
+            imageVersions=$(jq -r '.vmImageVersions' /tmp/techconfig.json)
+          else
+            echo "Seeding empty image versions array."
+            cat /tmp/techconfig.json
+            imageVersions="[]"
+          fi
+
+          # Append new image version
+          imageVersionsAppended=$(echo "$imageVersions" | jq \
+            --arg vNum  "$imageVersionNumber" \
+            --arg type  "$imageType" \
+            --arg osUrl "$osDiskSasUrl" \
+            --arg dataUrl "$dataDiskSasUrl" \
+            '. += [{"versionNumber":$vNum,"vmImages":[{"imageType":$type,"source":{"sourceType":"sasUri","osDisk":{"uri":$osUrl},"dataDisks":[{"lunNumber":0,"uri":$dataUrl}]}}]}]')
+
+          # Build request payload (skus omitted - inferred by Partner Center)
+          requestData=$(jq -n \
+            --arg schema   "https://schema.mp.microsoft.com/schema/configure/2022-03-01-preview2" \
+            --arg tcSchema "https://schema.mp.microsoft.com/schema/virtual-machine-plan-technical-configuration/2022-03-01-preview3" \
+            --arg offerId  "$offerId" \
+            --arg planId   "$planId" \
+            --arg osFamily "$operatingSystemFamily" \
+            --arg osType   "$operatingSystemType" \
+            --argjson imageVersions "$imageVersionsAppended" \
+            '{
+              "$schema": $schema,
+              "resources": [{
+                "$schema": $tcSchema,
+                "product": {"externalId": $offerId},
+                "plan":    {"externalId": $planId},
+                "operatingSystem": {"family": $osFamily, "type": $osType},
+                "vmImageVersions": $imageVersions
+              }]
+            }')
+
+          # POST configuration
+          echo "Request payload:"
+          echo "$requestData" | jq .
+          response=$(curl -s -X POST \
+            "https://graph.microsoft.com/rp/product-ingestion/configure" \
+            -H "Content-Type: application/json" \
+            -H "accept: application/json" \
+            -H "Authorization: Bearer ${token}" \
+            -d "$requestData")
+          echo "Configure response:"
+          echo "$response" | jq .
+          jobId=$(echo "$response" | jq -r '.jobId')
+          if [ -z "$jobId" ] || [ "$jobId" = "null" ]; then
+            echo "ERROR: No jobId returned from configure POST."
+            exit 1
+          fi
+          echo "Submitted configuration job: ${jobId}"
+
+          # Poll until complete (up to 10 attempts x 30s)
+          attempt=0
+          result="pending"
+          while [ "$result" = "pending" ] && [ $attempt -le 10 ]; do
+            sleep 30
+            jobStatusJson=$(curl --fail -s -X GET \
+              "https://graph.microsoft.com/rp/product-ingestion/configure/${jobId}/status" \
+              -H "Authorization: Bearer ${token}")
+            result=$(echo "$jobStatusJson" | jq -r '.jobResult')
+            echo "Job ${jobId} status: $(echo "$jobStatusJson" | jq -r '.jobStatus') / result: ${result}"
+            attempt=$((attempt + 1))
+          done
+
+          if [ "$result" != "succeeded" ]; then
+            echo "Partner Center job failed or timed out. Final status:"
+            echo "$jobStatusJson" | jq .
+            exit 1
+          fi
+          echo "Partner Center image version ${imageVersionNumber} submitted successfully."
 
   summary:
     needs: [build, verify_the_image, update_sas_url]
@@ -376,7 +540,7 @@ jobs:
     if: always()
     steps:
       - name: Azure login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ env.azureCredentials }}
       - name: Delete resource groups during verification
@@ -384,7 +548,7 @@ jobs:
         if: ${{ !inputs.retainTestingVMs }}
         run: |
             vmGroups=( ${{ env.testResourceGroup }}-entitled ${{ env.testResourceGroup }}-unentitled ${{ env.testResourceGroup }}-evaluation )
-            for (( i=0; i<${#vmGroups[@]}; i++ )); do 
+            for (( i=0; i<${#vmGroups[@]}; i++ )); do
                rgName=${vmGroups[$i]}
                if $(az group exists --name $rgName); then
                  echo "Resource group $rgName exists. Deleting..."
@@ -392,5 +556,16 @@ jobs:
                  echo "Resource group $rgName has been scheduled for deletion."
                else
                  echo "Resource group $rgName does not exist."
-               fi  
+               fi
             done
+      - name: Delete primary test resource group
+        continue-on-error: true
+        if: ${{ !inputs.retainTestingVMs }}
+        run: |
+            if $(az group exists --name ${{ env.testResourceGroup }}); then
+              echo "Deleting primary resource group ${{ env.testResourceGroup }}..."
+              az group delete --name ${{ env.testResourceGroup }} --yes --no-wait
+              echo "Resource group ${{ env.testResourceGroup }} has been scheduled for deletion."
+            else
+              echo "Resource group ${{ env.testResourceGroup }} does not exist."
+            fi
