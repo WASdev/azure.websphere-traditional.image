@@ -442,15 +442,17 @@ jobs:
           productDurableId=$(echo "$productJson" | jq -r '.value[0].id')
           echo "productDurableId: ${productDurableId}"
 
-          # Get plan durable ID
+          # Extract bare product ID (strip "product/" prefix)
+          productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
+
+          # Get plan durable ID (use bare product ID in query)
           planJson=$(curl --fail -s -X GET \
-            "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productDurableId}&externalId=${planId}" \
+            "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productIdWithoutPrefix}&externalId=${planId}" \
             -H "Authorization: Bearer ${token}")
           planDurableId=$(echo "$planJson" | jq -r '.value[0].id')
           echo "planDurableId: ${planDurableId}"
 
-          # Extract bare IDs (strip leading resource-type prefix)
-          productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
+          # Extract bare plan ID (format: product/PUUID/plan/PLANUUID → field 4)
           planIdWithoutPrefix=$(echo "$planDurableId" | cut -d'/' -f4)
           echo "techConfig URL: https://graph.microsoft.com/rp/product-ingestion/virtual-machine-plan-technical-configuration/${productIdWithoutPrefix}/${planIdWithoutPrefix}"
 
@@ -475,7 +477,7 @@ jobs:
             --arg dataUrl "$dataDiskSasUrl" \
             '. += [{"versionNumber":$vNum,"vmImages":[{"imageType":$type,"source":{"sourceType":"sasUri","osDisk":{"uri":$osUrl},"dataDisks":[{"lunNumber":0,"uri":$dataUrl}]}}]}]')
 
-          # Build request payload
+          # Build request payload (skus omitted - inferred by Partner Center)
           requestData=$(jq -n \
             --arg schema   "https://schema.mp.microsoft.com/schema/configure/2022-03-01-preview2" \
             --arg tcSchema "https://schema.mp.microsoft.com/schema/virtual-machine-plan-technical-configuration/2022-03-01-preview3" \
@@ -483,7 +485,6 @@ jobs:
             --arg planId   "$planId" \
             --arg osFamily "$operatingSystemFamily" \
             --arg osType   "$operatingSystemType" \
-            --arg imgType  "$imageType" \
             --argjson imageVersions "$imageVersionsAppended" \
             '{
               "$schema": $schema,
@@ -492,7 +493,6 @@ jobs:
                 "product": {"externalId": $offerId},
                 "plan":    {"externalId": $planId},
                 "operatingSystem": {"family": $osFamily, "type": $osType},
-                "skus": [{"imageType": $imgType, "skuId": $imgType}],
                 "vmImageVersions": $imageVersions
               }]
             }')
