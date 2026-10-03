@@ -430,9 +430,9 @@ jobs:
           # Extract bare product ID (strip "product/" prefix)
           productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
 
-          # Get plan durable ID (use bare product ID in query)
+          # Get plan durable ID (use full durable ID in query)
           planJson=$(curl -s -X GET \
-            "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productIdWithoutPrefix}&externalId=${planId}" \
+            "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productDurableId}&externalId=${planId}" \
             -H "Authorization: Bearer ${token}")
           echo "planJson: ${planJson}"
           planDurableId=$(echo "$planJson" | jq -r '.value[0].id')
