@@ -438,25 +438,30 @@ jobs:
             "https://graph.microsoft.com/rp/product-ingestion/product?externalId=${offerId}" \
             -H "Authorization: Bearer ${token}")
           productDurableId=$(echo "$productJson" | jq -r '.value[0].id')
+          echo "productDurableId: ${productDurableId}"
 
           # Get plan durable ID
           planJson=$(curl --fail -s -X GET \
             "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productDurableId}&externalId=${planId}" \
             -H "Authorization: Bearer ${token}")
           planDurableId=$(echo "$planJson" | jq -r '.value[0].id')
+          echo "planDurableId: ${planDurableId}"
 
           # Extract bare IDs (strip leading resource-type prefix)
           productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
           planIdWithoutPrefix=$(echo "$planDurableId" | cut -d'/' -f4)
+          echo "techConfig URL: https://graph.microsoft.com/rp/product-ingestion/virtual-machine-plan-technical-configuration/${productIdWithoutPrefix}/${planIdWithoutPrefix}"
 
-          # Get existing tech config - treat 400 (new/empty plan) as empty image list
+          # Get existing tech config - treat non-200 (new/empty plan) as empty image list
           techConfigResponse=$(curl -s -o /tmp/techconfig.json -w "%{http_code}" -X GET \
             "https://graph.microsoft.com/rp/product-ingestion/virtual-machine-plan-technical-configuration/${productIdWithoutPrefix}/${planIdWithoutPrefix}" \
             -H "Authorization: Bearer ${token}")
+          echo "Tech config GET response: ${techConfigResponse}"
           if [ "$techConfigResponse" = "200" ]; then
             imageVersions=$(jq -r '.vmImageVersions' /tmp/techconfig.json)
           else
-            echo "Tech config GET returned ${techConfigResponse} (new plan) - seeding empty image versions array."
+            echo "Seeding empty image versions array."
+            cat /tmp/techconfig.json
             imageVersions="[]"
           fi
 
@@ -491,13 +496,21 @@ jobs:
             }')
 
           # POST configuration
-          response=$(curl --fail -s -X POST \
+          echo "Request payload:"
+          echo "$requestData" | jq .
+          response=$(curl -s -X POST \
             "https://graph.microsoft.com/rp/product-ingestion/configure" \
             -H "Content-Type: application/json" \
             -H "accept: application/json" \
             -H "Authorization: Bearer ${token}" \
             -d "$requestData")
+          echo "Configure response:"
+          echo "$response" | jq .
           jobId=$(echo "$response" | jq -r '.jobId')
+          if [ -z "$jobId" ] || [ "$jobId" = "null" ]; then
+            echo "ERROR: No jobId returned from configure POST."
+            exit 1
+          fi
           echo "Submitted configuration job: ${jobId}"
 
           # Poll until complete (up to 10 attempts x 30s)
