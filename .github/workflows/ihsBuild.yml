@@ -430,20 +430,20 @@ jobs:
           # Extract bare product ID (strip "product/" prefix)
           productIdWithoutPrefix=$(echo "$productDurableId" | cut -d'/' -f2)
 
-          # List all plans to discover their externalIds
+          # Get plan durable ID - first try by externalId, fall back to first plan in list
+          # (Partner Center may not set externalId on newly created plans)
           allPlansJson=$(curl -s -X GET \
             "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productDurableId}" \
             -H "Authorization: Bearer ${token}")
           echo "All plans for product: $(echo "$allPlansJson" | jq '[.value[] | {id, externalId}]')"
-
-          # Get plan durable ID (use full durable ID in query)
-          planJson=$(curl -s -X GET \
-            "https://graph.microsoft.com/rp/product-ingestion/plan?product=${productDurableId}&externalId=${planId}" \
-            -H "Authorization: Bearer ${token}")
-          echo "planJson: ${planJson}"
-          planDurableId=$(echo "$planJson" | jq -r '.value[0].id')
+          planDurableId=$(echo "$allPlansJson" | jq -r --arg pid "$planId" \
+            '.value[] | select(.externalId == $pid) | .id' | head -1)
           if [ -z "$planDurableId" ] || [ "$planDurableId" = "null" ]; then
-            echo "ERROR: Could not resolve planId '${planId}' for product '${productIdWithoutPrefix}'."
+            echo "No plan matched externalId '${planId}', using first plan in list."
+            planDurableId=$(echo "$allPlansJson" | jq -r '.value[0].id')
+          fi
+          if [ -z "$planDurableId" ] || [ "$planDurableId" = "null" ]; then
+            echo "ERROR: No plans found for product '${productDurableId}'."
             exit 1
           fi
           echo "planDurableId: ${planDurableId}"
