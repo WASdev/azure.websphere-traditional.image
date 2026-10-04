@@ -366,8 +366,8 @@ jobs:
             --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
             --name vhds
 
-          # Generate container SAS token (used for both azcopy destinations and Partner Center)
-          sasToken=$(az storage container generate-sas \
+          # Generate container SAS token (write permissions for azcopy destination only)
+          containerSasToken=$(az storage container generate-sas \
             --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
             --name vhds --permissions racwdl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
 
@@ -381,7 +381,7 @@ jobs:
           osDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-os --duration-in-seconds 3600 --query accessSAS -o tsv)
           if [ -z "$osDiskSasAccess" ]; then echo "ERROR: osDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$osDiskSasAccess" \
-            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${sasToken}" \
+            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${containerSasToken}" \
             --blob-type PageBlob
           az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-os
           az snapshot delete -g ${{ env.testResourceGroup }} -n snap-os --no-wait
@@ -394,14 +394,23 @@ jobs:
           dataDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-data --duration-in-seconds 3600 --query accessSAS -o tsv)
           if [ -z "$dataDiskSasAccess" ]; then echo "ERROR: dataDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$dataDiskSasAccess" \
-            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${sasToken}" \
+            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${containerSasToken}" \
             --blob-type PageBlob
           az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-data
           az snapshot delete -g ${{ env.testResourceGroup }} -n snap-data --no-wait
 
+          # Generate per-blob read-only SAS tokens for Partner Center (blob SAS, sr=b, not container SAS)
+          osDiskBlobSasToken=$(az storage blob generate-sas \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --container-name vhds --name "${{ env.vmName }}.vhd" \
+            --permissions r --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
+          dataDiskBlobSasToken=$(az storage blob generate-sas \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --container-name vhds --name "${{ env.vmName }}datadisk1.vhd" \
+            --permissions r --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
           blobStorageEndpoint=$(az storage account show -n ${{ env.vhdStorageAccountName }} -g ${{ env.testResourceGroup }} -o json | jq -r '.primaryEndpoints.blob')
-          osDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?$sasToken
-          dataDiskSasUrl=${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?$sasToken
+          osDiskSasUrl="${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?${osDiskBlobSasToken}"
+          dataDiskSasUrl="${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?${dataDiskBlobSasToken}"
 
           echo "osDiskSasUrl: ${osDiskSasUrl}, dataDiskSasUrl: ${dataDiskSasUrl}" > sas-url-twasbase.txt
           echo "osDiskSasUrl=${osDiskSasUrl}" >> $GITHUB_OUTPUT
