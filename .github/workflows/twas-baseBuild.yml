@@ -486,7 +486,7 @@ jobs:
             --arg dataUrl "$dataDiskSasUrl" \
             '. += [{"versionNumber":$vNum,"vmImages":[{"imageType":$type,"source":{"sourceType":"sasUri","osDisk":{"uri":$osUrl},"dataDisks":[{"lunNumber":0,"uri":$dataUrl}]}}]}]')
 
-          # Build request payload - reference plan by durable ID since externalId may be null
+          # Build request payload - plan is a string (durable ID), product uses externalId
           requestData=$(jq -n \
             --arg schema      "https://schema.mp.microsoft.com/schema/configure/2022-03-01-preview2" \
             --arg tcSchema    "https://schema.mp.microsoft.com/schema/virtual-machine-plan-technical-configuration/2022-03-01-preview3" \
@@ -500,7 +500,7 @@ jobs:
               "resources": [{
                 "$schema": $tcSchema,
                 "product": {"externalId": $offerId},
-                "plan":    {"id": $planDurable},
+                "plan":    $planDurable,
                 "operatingSystem": {"family": $osFamily, "type": $osType},
                 "vmImageVersions": $imageVersions
               }]

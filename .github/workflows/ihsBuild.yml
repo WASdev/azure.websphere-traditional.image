@@ -487,7 +487,7 @@ jobs:
               "resources": [{
                 "$schema": $tcSchema,
                 "product": {"externalId": $offerId},
-                "plan":    {"id": $planDurable},
+                "plan":    $planDurable,
                 "operatingSystem": {"family": $osFamily, "type": $osType},
                 "vmImageVersions": $imageVersions
               }]
