@@ -459,10 +459,15 @@ jobs:
           echo "Tech config GET response: ${techConfigResponse}"
           if [ "$techConfigResponse" = "200" ]; then
             imageVersions=$(jq -r '.vmImageVersions' /tmp/techconfig.json)
+            # Collect all image types already defined in existing skus, add new type if missing
+            existingSkus=$(jq -r '.skus // []' /tmp/techconfig.json)
+            skus=$(echo "$existingSkus" | jq --arg type "$imageType" \
+              'if any(.[]; .imageType == $type) then . else . += [{"imageType": $type, "skuId": $type}] end')
           else
             echo "Seeding empty image versions array."
             cat /tmp/techconfig.json
             imageVersions="[]"
+            skus=$(jq -n --arg type "$imageType" '[{"imageType": $type, "skuId": $type}]')
           fi
 
           # Append new image version
@@ -473,7 +478,7 @@ jobs:
             --arg dataUrl "$dataDiskSasUrl" \
             '. += [{"versionNumber":$vNum,"vmImages":[{"imageType":$type,"source":{"sourceType":"sasUri","osDisk":{"uri":$osUrl},"dataDisks":[{"lunNumber":0,"uri":$dataUrl}]}}]}]')
 
-          # Build request payload - reference plan by durable ID since externalId may be null
+          # Build request payload - skus must declare all image types present in vmImageVersions
           requestData=$(jq -n \
             --arg schema      "https://schema.mp.microsoft.com/schema/configure/2022-03-01-preview2" \
             --arg tcSchema    "https://schema.mp.microsoft.com/schema/virtual-machine-plan-technical-configuration/2022-03-01-preview3" \
@@ -481,6 +486,7 @@ jobs:
             --arg planDurable "$planDurableId" \
             --arg osFamily    "$operatingSystemFamily" \
             --arg osType      "$operatingSystemType" \
+            --argjson skus "$skus" \
             --argjson imageVersions "$imageVersionsAppended" \
             '{
               "$schema": $schema,
@@ -489,6 +495,7 @@ jobs:
                 "product": {"externalId": $offerId},
                 "plan":    $planDurable,
                 "operatingSystem": {"family": $osFamily, "type": $osType},
+                "skus": $skus,
                 "vmImageVersions": $imageVersions
               }]
             }')
