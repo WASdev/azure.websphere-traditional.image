@@ -126,7 +126,7 @@ jobs:
           echo "Branch name is $GITHUB_REF_NAME"
           mvn -Dgit.repo=${{ env.userName }} -Dgit.tag=$GITHUB_REF_NAME \
             -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} \
-            -DstorageAccount=${{ env.vhdStorageAccountName }} -DvmName=${{ env.vmName }} \
+            -DvmName=${{ env.vmName }} \
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
             clean install --file ${{ env.repoName }}/twas-base/pom.xml
@@ -357,8 +357,8 @@ jobs:
           chmod +x azcopy
 
           # Get a minus-24-hour date and a plus-30-day date for the SAS token
-          minus24HoursUtc=$(date -u --date "$(date -u) -24 hour" +%Y-%m-%dT%H:%MZ)
-          plus30DaysUtc=$(date -u --date "$(date -u) 30 day" +%Y-%m-%dT%H:%MZ)
+          minus24HoursUtc=$(date -u --date "$(date -u) -24 hour" +%Y-%m-%dT%H:%M:%SZ)
+          plus30DaysUtc=$(date -u --date "$(date -u) 30 day" +%Y-%m-%dT%H:%M:%SZ)
 
           # Create the persistent VHD storage resource group and storage account if they don't exist.
           # This RG is NOT deleted by delete_resource, so the VHDs remain reachable by Partner Center.
