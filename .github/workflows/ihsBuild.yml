@@ -485,7 +485,7 @@ jobs:
             --arg type  "$imageType" \
             --arg osUrl "$osDiskSasUrl" \
             --arg dataUrl "$dataDiskSasUrl" \
-            '. += [{"versionNumber":$vNum,"vmImages":[{"imageType":$type,"source":{"sourceType":"sasUri","osDisk":{"uri":$osUrl},"dataDisks":[{"lunNumber":0,"uri":$dataUrl}]}}]}]')
+            '[.[] | select(.versionNumber != $vNum)] + [{"versionNumber":$vNum,"vmImages":[{"imageType":$type,"source":{"sourceType":"sasUri","osDisk":{"uri":$osUrl},"dataDisks":[{"lunNumber":0,"uri":$dataUrl}]}}]}]')
 
           # Build request payload - skus must declare all image types present in vmImageVersions
           requestData=$(jq -n \
