@@ -448,8 +448,8 @@ jobs:
           fi
           echo "planDurableId: ${planDurableId}"
 
-          # Extract bare plan ID (format: product/PUUID/plan/PLANUUID → field 4)
-          planIdWithoutPrefix=$(echo "$planDurableId" | cut -d'/' -f4)
+          # Extract bare plan UUID (format: plan/PRODUCT-UUID/PLAN-UUID → field 3)
+          planIdWithoutPrefix=$(echo "$planDurableId" | cut -d'/' -f3)
           echo "techConfig URL: https://graph.microsoft.com/rp/product-ingestion/virtual-machine-plan-technical-configuration/${productIdWithoutPrefix}/${planIdWithoutPrefix}"
 
           # Get existing tech config - treat non-200 (new/empty plan) as empty image list
@@ -473,21 +473,21 @@ jobs:
             --arg dataUrl "$dataDiskSasUrl" \
             '. += [{"versionNumber":$vNum,"vmImages":[{"imageType":$type,"source":{"sourceType":"sasUri","osDisk":{"uri":$osUrl},"dataDisks":[{"lunNumber":0,"uri":$dataUrl}]}}]}]')
 
-          # Build request payload (skus omitted - inferred by Partner Center)
+          # Build request payload - reference plan by durable ID since externalId may be null
           requestData=$(jq -n \
-            --arg schema   "https://schema.mp.microsoft.com/schema/configure/2022-03-01-preview2" \
-            --arg tcSchema "https://schema.mp.microsoft.com/schema/virtual-machine-plan-technical-configuration/2022-03-01-preview3" \
-            --arg offerId  "$offerId" \
-            --arg planId   "$planId" \
-            --arg osFamily "$operatingSystemFamily" \
-            --arg osType   "$operatingSystemType" \
+            --arg schema      "https://schema.mp.microsoft.com/schema/configure/2022-03-01-preview2" \
+            --arg tcSchema    "https://schema.mp.microsoft.com/schema/virtual-machine-plan-technical-configuration/2022-03-01-preview3" \
+            --arg offerId     "$offerId" \
+            --arg planDurable "$planDurableId" \
+            --arg osFamily    "$operatingSystemFamily" \
+            --arg osType      "$operatingSystemType" \
             --argjson imageVersions "$imageVersionsAppended" \
             '{
               "$schema": $schema,
               "resources": [{
                 "$schema": $tcSchema,
                 "product": {"externalId": $offerId},
-                "plan":    {"externalId": $planId},
+                "plan":    {"id": $planDurable},
                 "operatingSystem": {"family": $osFamily, "type": $osType},
                 "vmImageVersions": $imageVersions
               }]
