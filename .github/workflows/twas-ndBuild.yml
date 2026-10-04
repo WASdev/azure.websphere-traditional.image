@@ -475,7 +475,7 @@ jobs:
           if [ "$techConfigResponse" = "200" ]; then
             imageVersions=$(jq -r '.vmImageVersions' /tmp/techconfig.json)
             # Collect all image types already defined in existing skus, add new type if missing
-            existingSkus=$(jq -r '.skus // []' /tmp/techconfig.json)
+            existingSkus=$(jq -r '[(.skus // [])[] | {imageType, skuId}]' /tmp/techconfig.json)
             skus=$(echo "$existingSkus" | jq --arg type "$imageType" \
               'if any(.[]; .imageType == $type) then . else . += [{"imageType": $type, "skuId": $type}] end')
           else
