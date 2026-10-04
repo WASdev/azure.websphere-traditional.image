@@ -51,7 +51,6 @@ env:
   testResourceGroup: IMAGETEST-WASDEV-${{ github.repository_owner }}-${{ github.run_id }}-${{ github.run_number }}-twasND
   vmName: vm-${{ github.run_id }}-${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
-  vhdStorageResourceGroup: VHD-WASDEV-twasnd
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-nd/test/
   utilitiesLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/utilities/
@@ -362,18 +361,7 @@ jobs:
           minus24HoursUtc=$(date -u --date "$(date -u) -24 hour" +%Y-%m-%dT%H:%M:%SZ)
           plus30DaysUtc=$(date -u --date "$(date -u) 30 day" +%Y-%m-%dT%H:%M:%SZ)
 
-          # Create the persistent VHD storage resource group and storage account if they don't exist.
-          # This RG is NOT deleted by delete_resource, so the VHDs remain reachable by Partner Center.
-          az group create --name ${{ env.vhdStorageResourceGroup }} --location ${{ env.location }} --output none
-          az storage account create \
-            --name ${{ env.vhdStorageAccountName }} \
-            --resource-group ${{ env.vhdStorageResourceGroup }} \
-            --location ${{ env.location }} \
-            --sku Standard_LRS \
-            --kind StorageV2 \
-            --output none
-
-          vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --resource-group ${{ env.vhdStorageResourceGroup }} --query "[?keyName=='key1'].value" -o tsv)
+          vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
 
           # Create the vhds container if it does not exist
           az storage container create \
