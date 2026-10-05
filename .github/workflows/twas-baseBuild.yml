@@ -125,7 +125,7 @@ jobs:
           echo "Branch name is $GITHUB_REF_NAME"
           mvn -Dgit.repo=${{ env.userName }} -Dgit.tag=$GITHUB_REF_NAME \
             -DibmUserId=${{ env.entitledIbmUserId }} -DibmUserPwd=${{ env.entitledIbmPassword }} \
-            -DstorageAccount= -DvmName=${{ env.vmName }} \
+            -DstorageAccount=${{ env.vhdStorageAccountName }} -DvmName=${{ env.vmName }} \
             -DvmAdminId=${{ env.vmAdminId }} -DvmAdminPwd=${{ env.vmAdminPassword }} \
             -Dtest.args="-Test All" -Ptemplate-validation-tests -Dtemplate.validation.tests.directory=../../arm-ttk/arm-ttk \
             clean install --file ${{ env.repoName }}/twas-base/pom.xml
