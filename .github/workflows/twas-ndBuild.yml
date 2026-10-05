@@ -51,6 +51,8 @@ env:
   testResourceGroup: IMAGETEST-WASDEV-${{ github.repository_owner }}-${{ github.run_id }}-${{ github.run_number }}-twasND
   vmName: vm-${{ github.run_id }}-${{ github.run_number }}
   vhdStorageAccountName: storage${{ github.run_id }}${{ github.run_number }}
+  vhdPersistentStorageAccountName: vhdstoragetwasnd
+  vhdPersistentStorageResourceGroup: VHD-WASDEV-twasnd
   location: eastus
   scriptLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/twas-nd/test/
   utilitiesLocation: https://raw.githubusercontent.com/${{ secrets.USER_NAME }}/azure.websphere-traditional.image/$GITHUB_REF_NAME/utilities/
@@ -361,16 +363,28 @@ jobs:
           minus24HoursUtc=$(date -u --date "$(date -u) -24 hour" +%Y-%m-%dT%H:%M:%SZ)
           plus30DaysUtc=$(date -u --date "$(date -u) 30 day" +%Y-%m-%dT%H:%M:%SZ)
 
-          vhdStorageAccountAccessKey=$(az storage account keys list --account-name ${{ env.vhdStorageAccountName }} --query "[?keyName=='key1'].value" -o tsv)
+          # Create the persistent VHD storage RG and account (idempotent).
+          # This RG is NOT deleted by delete_resource, so blobs remain reachable by Partner Center.
+          az group create --name ${{ env.vhdPersistentStorageResourceGroup }} --location ${{ env.location }} --output none
+          az storage account create \
+            --name ${{ env.vhdPersistentStorageAccountName }} \
+            --resource-group ${{ env.vhdPersistentStorageResourceGroup }} \
+            --location ${{ env.location }} \
+            --sku Standard_LRS --kind StorageV2 --output none
 
-          # Create the vhds container if it does not exist
+          persistentAccessKey=$(az storage account keys list \
+            --account-name ${{ env.vhdPersistentStorageAccountName }} \
+            --resource-group ${{ env.vhdPersistentStorageResourceGroup }} \
+            --query "[?keyName=='key1'].value" -o tsv)
+
+          # Create the vhds container in the persistent account
           az storage container create \
-            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdPersistentStorageAccountName }};AccountKey=${persistentAccessKey};EndpointSuffix=core.windows.net" \
             --name vhds
 
-          # Generate container SAS token (write permissions for azcopy destination only)
+          # Generate container SAS token for azcopy writes to the persistent account
           containerSasToken=$(az storage container generate-sas \
-            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdPersistentStorageAccountName }};AccountKey=${persistentAccessKey};EndpointSuffix=core.windows.net" \
             --name vhds --permissions racwdl --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
 
           imageJson=$(az image show -g ${{ env.testResourceGroup }} -n ${{ env.vmName }} -o json)
@@ -383,7 +397,7 @@ jobs:
           osDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-os --duration-in-seconds 3600 --query accessSAS -o tsv)
           if [ -z "$osDiskSasAccess" ]; then echo "ERROR: osDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$osDiskSasAccess" \
-            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${containerSasToken}" \
+            "https://${{ env.vhdPersistentStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}.vhd?${containerSasToken}" \
             --blob-type PageBlob
           az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-os
           az snapshot delete -g ${{ env.testResourceGroup }} -n snap-os --no-wait
@@ -396,21 +410,21 @@ jobs:
           dataDiskSasAccess=$(az snapshot grant-access -g ${{ env.testResourceGroup }} -n snap-data --duration-in-seconds 3600 --query accessSAS -o tsv)
           if [ -z "$dataDiskSasAccess" ]; then echo "ERROR: dataDiskSasAccess is empty"; exit 1; fi
           ./azcopy copy "$dataDiskSasAccess" \
-            "https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${containerSasToken}" \
+            "https://${{ env.vhdPersistentStorageAccountName }}.blob.core.windows.net/vhds/${{ env.vmName }}datadisk1.vhd?${containerSasToken}" \
             --blob-type PageBlob
           az snapshot revoke-access -g ${{ env.testResourceGroup }} -n snap-data
           az snapshot delete -g ${{ env.testResourceGroup }} -n snap-data --no-wait
 
           # Generate per-blob read-only SAS tokens for Partner Center (blob SAS, sr=b, not container SAS)
           osDiskBlobSasToken=$(az storage blob generate-sas \
-            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdPersistentStorageAccountName }};AccountKey=${persistentAccessKey};EndpointSuffix=core.windows.net" \
             --container-name vhds --name "${{ env.vmName }}.vhd" \
             --permissions r --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
           dataDiskBlobSasToken=$(az storage blob generate-sas \
-            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdStorageAccountName }};AccountKey=${vhdStorageAccountAccessKey};EndpointSuffix=core.windows.net" \
+            --connection-string "DefaultEndpointsProtocol=https;AccountName=${{ env.vhdPersistentStorageAccountName }};AccountKey=${persistentAccessKey};EndpointSuffix=core.windows.net" \
             --container-name vhds --name "${{ env.vmName }}datadisk1.vhd" \
             --permissions r --start "${minus24HoursUtc}" --expiry "${plus30DaysUtc}" -o tsv)
-          blobStorageEndpoint="https://${{ env.vhdStorageAccountName }}.blob.core.windows.net/"
+          blobStorageEndpoint="https://${{ env.vhdPersistentStorageAccountName }}.blob.core.windows.net/"
           osDiskSasUrl="${blobStorageEndpoint}vhds/${{ env.vmName }}.vhd?${osDiskBlobSasToken}"
           dataDiskSasUrl="${blobStorageEndpoint}vhds/${{ env.vmName }}datadisk1.vhd?${dataDiskBlobSasToken}"
 
