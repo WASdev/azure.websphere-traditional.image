@@ -23,7 +23,7 @@ on:
       imageType:
         description: 'The type of the image'
         required: true
-        default: 'x64Gen1'
+        default: 'x64Gen2'
       operatingSystemFamily:
         description: 'The OS family'
         required: true

@@ -19,7 +19,7 @@
             "type": "string"
         },
         "vmSize": {
-            "defaultValue": "Standard_D2_v3",
+            "defaultValue": "Standard_D2s_v3",
             "type": "string"
         },
         "osDiskType": {
@@ -64,7 +64,7 @@
         }
     },
     "variables": {
-        "const_arguments": "[concat(' -u ',parameters('ibmUserId'),' -p ',parameters('ibmUserPwd'))]",
+        "const_arguments": "[concat(' -u ''',parameters('ibmUserId'),''' -p ''',parameters('ibmUserPwd'),'''')]",
         "const_cloudInitScript": "#!/bin/bash
 disk=sda
 sudo parted /dev/${disk} --script mklabel gpt mkpart xfspart xfs 0% 100%
@@ -96,7 +96,6 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
         "ref_networkInterface": "[resourceId('Microsoft.Network/networkInterfaces', variables('name_networkInterface'))]",
         "ref_networkSecurityGroup": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('name_networkSecurityGroup'))]",
         "ref_publicIPAddress": "[resourceId('Microsoft.Network/publicIPAddresses', variables('name_publicIPAddress'))]",
-        "ref_storage": "[resourceId('Microsoft.Storage/storageAccounts', variables('name_storageAccount'))]",
         "ref_subnet": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('name_virtualNetwork'), parameters('subnetName'))]",
         "ref_virtualMachine": "[resourceId('Microsoft.Compute/virtualMachines', variables('name_virtualMachine'))]",
         "ref_virtualNetwork": "[resourceId('Microsoft.Network/virtualNetworks', variables('name_virtualNetwork'))]"
@@ -165,8 +164,11 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
             "apiVersion": "${azure.apiVersion}",
             "name": "[variables('name_publicIPAddress')]",
             "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard"
+            },
             "properties": {
-                "publicIPAllocationMethod": "Dynamic",
+                "publicIPAllocationMethod": "Static",
                 "dnsSettings": {
                     "domainNameLabel": "[variables('const_dnsLabelPrefix')]"
                 }
@@ -207,7 +209,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
             "apiVersion": "${azure.apiVersionSA}",
             "location": "[parameters('location')]",
             "properties": {},
-            "kind": "Storage",
+            "kind": "StorageV2",
             "sku": {
                 "name": "[parameters('osDiskType')]"
             }
@@ -218,8 +220,7 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
             "name": "[variables('name_virtualMachine')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('ref_networkInterface')]",
-                "[variables('ref_storage')]"
+                "[variables('ref_networkInterface')]"
             ],
             "tags": {
                 "SkipGreenTeamLinuxSSHAuthForResource": true
@@ -238,17 +239,17 @@ sudo mkdir /datadrive && sudo mount /dev/${disk}1 /datadrive",
                     "osDisk": {
                         "name": "[concat(variables('name_virtualMachine'), '-disk')]",
                         "createOption": "FromImage",
-                        "vhd": {
-                            "uri": "[uri(reference(variables('name_storageAccount')).primaryEndpoints.blob, concat('vhds/', variables('name_virtualMachine'), '.vhd'))]"
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('osDiskType')]"
                         }
                     },
                     "dataDisks": [
                         {
-                            "name": "datadisk1",
+                            "name": "[concat(variables('name_virtualMachine'), '-datadisk1')]",
                             "diskSizeGB": "[int('${datadisk.sizeGB}')]",
                             "lun": 0,
-                            "vhd": {
-                                "uri": "[uri(reference(variables('name_storageAccount')).primaryEndpoints.blob, concat('vhds/', variables('name_virtualMachine'), 'datadisk1.vhd'))]"
+                            "managedDisk": {
+                                "storageAccountType": "[parameters('osDiskType')]"
                             },
                             "createOption": "Empty"
                         }
