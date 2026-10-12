@@ -62,33 +62,30 @@ unzip -q "$IM_INSTALL_KIT" -d im_installer
 chmod -R 755 ./im_installer/*
 ./im_installer/installc -log log_file -acceptLicense -installationDirectory ${IM_INSTALL_DIRECTORY}
 
-# Save credentials to secure storage for entitled repository
-echo "IMmasterPassword" > master_password_file
+# Save credentials to secure storage for Passport Advantage entitled repository
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imutilsc saveCredential \
     -secureStorageFile storage_file \
-    -masterPasswordFile master_password_file \
     -userName "$userName" -userPassword "$password" \
-    -url "$REPOSITORY_URL"
+    -passportAdvantage
 if [ $? -ne 0 ]; then
     echo "$(date): Cannot connect to Passport Advantage."
-    rm -rf storage_file log_file master_password_file
+    rm -rf storage_file log_file
     exit 1
 fi
 
 # Check whether IBMid is entitled or not
 output=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listAvailablePackages \
-    -repositories "$REPOSITORY_URL" \
-    -secureStorageFile storage_file \
-    -masterPasswordFile master_password_file)
+    -cPA \
+    -secureStorageFile storage_file)
 if echo "$output" | grep "$WAS_ND_VERSION_ENTITLED"; then
     echo "$(date): IBMid entitlement check succeeded."
 elif echo "$output" | grep "$NO_PACKAGES_FOUND"; then
     echo "$(date): IBMid entitlement check is not available."
-    rm -rf storage_file log_file master_password_file
+    rm -rf storage_file log_file
     exit 1
 else
     echo "$(date): IBMid entitlement check failed."
-    rm -rf storage_file log_file master_password_file
+    rm -rf storage_file log_file
     exit 1
 fi
 
@@ -96,7 +93,7 @@ fi
 # Use both base repository (full installer plug-ins) and entitled repository (latest fix pack)
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install "$WAS_ND_TRADITIONAL" "$IBM_JAVA_SDK" \
     -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
-    -secureStorageFile storage_file -masterPasswordFile master_password_file \
+    -secureStorageFile storage_file \
     -installationDirectory ${WAS_ND_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
 
@@ -104,14 +101,14 @@ if [ $? -eq 0 ]; then
     echo "$(date): IBM WebSphere Application Server Network Deployment V9 installed successfully."
 else
     echo "$(date): IBM WebSphere Application Server Network Deployment V9 failed to be installed."
-    rm -rf storage_file log_file master_password_file
+    rm -rf storage_file log_file
     exit 1
 fi
 
 # Update packages and apply iFixes
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl updateAll \
     -repositories "$REPOSITORY_URL" \
-    -secureStorageFile storage_file -masterPasswordFile master_password_file \
+    -secureStorageFile storage_file \
     -acceptLicense -log log_file -installFixes recommended \
     -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress
 
@@ -119,12 +116,12 @@ if [ $? -eq 0 ]; then
     echo "$(date): Successfully updated packages and applied iFixes."
 else
     echo "$(date): Failed to update packages and apply iFixes."
-    rm -rf storage_file log_file master_password_file
+    rm -rf storage_file log_file
     exit 1
 fi
 
 # Remove temporary files
-rm -rf storage_file log_file master_password_file
+rm -rf storage_file log_file
 
 # Install other packages
 yum install cifs-utils -y -q
