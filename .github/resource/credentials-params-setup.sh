@@ -41,13 +41,14 @@ set_values() {
     yq eval -o=json '.[]' "$param_file" | jq -c '.' | while read -r line; do
         name=$(echo "$line" | jq -r '.name')
         value=$(echo "$line" | jq -r '.value')
-        gh secret --repo $(gh repo set-default --view) set "$name" -b"${value}"
+        printf '%s' "${value}" | gh secret set "$name" --repo WASdev/azure.websphere-traditional.image
     done
 }
 
 # Main script execution
 main() {
   CURRENT_FILE_NAME="credentials-params-setup.sh"
+  param_file="$(dirname "$0")/credentials-params.yaml"
   echo "Execute $CURRENT_FILE_NAME - Start------------------------------------------"
 
   if check_parameters; then
