@@ -48,8 +48,15 @@ set_values() {
 # Main script execution
 main() {
   CURRENT_FILE_NAME="credentials-params-setup.sh"
-  param_file="$(dirname "$0")/credentials-params.yaml"
+  # Honor a caller-supplied param_file; otherwise default to the file next to
+  # this script. BASH_SOURCE (not $0) is used so this works when sourced.
+  param_file="${param_file:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/credentials-params.yaml}"
   echo "Execute $CURRENT_FILE_NAME - Start------------------------------------------"
+
+  if [ ! -f "$param_file" ] || [ ! -r "$param_file" ]; then
+      print_error "The parameter file '$param_file' does not exist or is not a readable file."
+      exit 1
+  fi
 
   if check_parameters; then
       echo "All parameters are valid."

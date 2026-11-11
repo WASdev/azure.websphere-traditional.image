@@ -52,6 +52,18 @@ fi
 # Check installation exists or not
 if [ ${deploymentMode} != $UNENTITLED ]; then
     ${WAS_BASE_INSTALL_DIRECTORY}/bin/versionInfo.sh
+
+    # Check the installed edition: Base must be present and ND must not be
+    installed=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listInstalledPackages -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/)
+    echo "$installed"
+    if ! echo "$installed" | grep -q "$WAS_BASE_TRADITIONAL"; then
+        echo "The installed packages do not contain ${WAS_BASE_TRADITIONAL}."
+        exit 1
+    fi
+    if echo "$installed" | grep -q "$WAS_ND_TRADITIONAL"; then
+        echo "The installed packages contain ${WAS_ND_TRADITIONAL}; the Base image must not contain Network Deployment."
+        exit 1
+    fi
 elif [ -d ${WAS_BASE_INSTALL_DIRECTORY}/bin ]; then
     echo "The installation directory still exists, it should be removed for the unentitled user."
     exit 1

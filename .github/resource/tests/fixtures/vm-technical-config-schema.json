@@ -1,0 +1,637 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.mp.microsoft.com/schema/virtual-machine-plan-technical-configuration/2022-03-01-preview3",
+  "title": "Microsoft Product Ingestion Virtual Machine Plan Technical Configuration",
+  "description": "The json schema of azure virtual machine plan technical configuration.",
+  "allOf": [
+    {
+      "$ref": "https://schema.mp.microsoft.com/schema/resource/2022-03-01-preview2"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "product": {
+          "$ref": "https://schema.mp.microsoft.com/schema/resource-reference/2022-03-01-preview2"
+        },
+        "plan": {
+          "$ref": "https://schema.mp.microsoft.com/schema/resource-reference/2022-03-01-preview2"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sku"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        },
+        "reuseTechnicalConfigurationState": {
+          "enum": [
+            "enable",
+            "detach"
+          ]
+        },
+        "basePlan": {
+          "$ref": "https://schema.mp.microsoft.com/schema/resource-reference/2022-03-01-preview2"
+        },
+        "operatingSystem": {
+          "$ref": "https://schema.mp.microsoft.com/schema/virtual-machine-operating-system/2022-03-01-preview3"
+        },
+        "recommendedVmSizes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6
+        },
+        "openPorts": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schema.mp.microsoft.com/schema/virtual-machine-open-port/2022-03-01-preview2"
+          },
+          "maxItems": 100
+        },
+        "vmProperties": {
+          "$ref": "#/$defs/vmProperties"
+        },
+        "vmImageVersions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/vmImageVersion"
+          }
+        }
+      },
+      "required": [
+        "product",
+        "plan"
+      ]
+    }
+  ],
+  "$defs": {
+    "https://schema.mp.microsoft.com/schema/resource-lifecycle-state/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/resource-lifecycle-state/2022-03-01-preview2",
+      "type": "string",
+      "$comment": "deleted only if in draft and never published. Deprecated replaces StopSold",
+      "enum": [
+        "notAvailable",
+        "neverUsed",
+        "test",
+        "preview",
+        "generallyAvailable",
+        "deprecated",
+        "decommissioned",
+        "deleted"
+      ]
+    },
+    "https://schema.mp.microsoft.com/schema/deprecation-schedule/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/deprecation-schedule/2022-03-01-preview2",
+      "description": "Defines a \u003Cwhat\u003E schedule for a deprecated resource",
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "$ref": "https://schema.mp.microsoft.com/schema/schema-uri/2022-03-01-preview2"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "readOnly": true
+        },
+        "dateOffset": {
+          "type": "string",
+          "format": "duration"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "criticalSecurityIssue",
+            "endOfSupport",
+            "other"
+          ]
+        },
+        "alternative": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "product": {
+                  "$ref": "https://schema.mp.microsoft.com/schema/resource-reference/2022-03-01-preview2"
+                }
+              },
+              "required": [
+                "product"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "plan": {
+                  "$ref": "https://schema.mp.microsoft.com/schema/resource-reference/2022-03-01-preview2"
+                }
+              },
+              "required": [
+                "plan"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "https://schema.mp.microsoft.com/schema/virtual-machine-os-disk/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/virtual-machine-os-disk/2022-03-01-preview2",
+      "title": "Microsoft Product Ingestion Virtual Machine OS Disk",
+      "description": "The json schema of azure virtual machine OS disk.",
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "uri"
+      ],
+      "additionalProperties": false
+    },
+    "https://schema.mp.microsoft.com/schema/virtual-machine-data-disk/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/virtual-machine-data-disk/2022-03-01-preview2",
+      "title": "Microsoft Product Ingestion Virtual Machine Data Disk",
+      "description": "The json schema of azure virtual machine data disk.",
+      "type": "object",
+      "properties": {
+        "lunNumber": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "lunNumber",
+        "uri"
+      ],
+      "additionalProperties": false
+    },
+    "https://schema.mp.microsoft.com/schema/resource/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/resource/2022-03-01-preview2",
+      "$comment": "This schema is extended by a resource type schema. We allow additional properties to enable that",
+      "type": "object",
+      "properties": {
+        "resourceName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "id": {
+          "$ref": "https://schema.mp.microsoft.com/schema/durable-id/2022-03-01-preview2"
+        },
+        "validations": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schema.mp.microsoft.com/schema/validation/2022-03-01-preview2"
+          },
+          "readonly": true
+        }
+      },
+      "required": [
+        "$schema"
+      ],
+      "additionalProperties": true
+    },
+    "https://schema.mp.microsoft.com/schema/resource-reference/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/resource-reference/2022-03-01-preview2",
+      "oneOf": [
+        {
+          "$ref": "https://schema.mp.microsoft.com/schema/durable-id/2022-03-01-preview2"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "externalId": {
+              "description": "ExternalId for product and plan references. Property reference must be named product or plan.",
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-_]{2,49}$",
+              "minLength": 3,
+              "maxLength": 50,
+              "$example": {
+                "plan": {
+                  "externalId": "customerNamedPlan123"
+                }
+              }
+            }
+          },
+          "required": [
+            "externalId"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceName": {
+              "description": "Resource Name that can be referenced using this value by another resource.",
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9-_]\u002B$",
+              "minLength": 1,
+              "maxLength": 50,
+              "$example": {
+                "plan": {
+                  "resourceName": "resourcePlan1"
+                }
+              }
+            }
+          },
+          "required": [
+            "resourceName"
+          ]
+        }
+      ]
+    },
+    "https://schema.mp.microsoft.com/schema/virtual-machine-operating-system/2022-03-01-preview3": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/virtual-machine-operating-system/2022-03-01-preview3",
+      "title": "Microsoft Product Ingestion Virtual Machine Operating System",
+      "description": "The json schema of azure virtual machine operating system.",
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "family": {
+              "const": "windows"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "windowsServer2008R2",
+                "windowsServer2012",
+                "windowsServer2012R2",
+                "windowsServer2012R2Datacenter",
+                "windowsServer2016",
+                "windowsServer2019",
+                "windowsServer2022",
+                "windowsServer2022DatacenterAzureEdition",
+                "windowsServerVersion20H2",
+                "windowsServerVersion2004",
+                "other"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "family": {
+              "const": "linux"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "debian",
+                "centos",
+                "openSolaris",
+                "redHat",
+                "ubuntu",
+                "suse",
+                "cblMariner",
+                "oracleLinux",
+                "other"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "required": [
+        "family",
+        "type"
+      ]
+    },
+    "https://schema.mp.microsoft.com/schema/virtual-machine-open-port/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/virtual-machine-open-port/2022-03-01-preview2",
+      "title": "Microsoft Product Ingestion Virtual Machine Open Port",
+      "description": "The json schema of azure virtual machine open port.",
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 20,
+          "pattern": "^[a-zA-Z_0-9.\\- ]*[a-zA-Z_0-9]$"
+        },
+        "portRange": {
+          "type": "string",
+          "pattern": "^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-6])(?:\\s*-\\s*([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-6]))?$"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": [
+            "tcp",
+            "udp",
+            "both"
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "portRange",
+        "protocol"
+      ],
+      "additionalProperties": false
+    },
+    "https://schema.mp.microsoft.com/schema/schema-uri/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/schema-uri/2022-03-01-preview2",
+      "title": "Product Ingestion schema uri",
+      "type": "string",
+      "pattern": "^https://(schema(-int)?\\.mp\\.microsoft\\.com)|(product-ingestion(-int)?\\.azureedge\\.net)/schema/[a-z][a-z0-9]\u002B(?:-[a-z0-9]\u002B)*/\\d{4}(?:-\\d\\d){2}(?:-dev|-preview\\d\u002B)?$"
+    },
+    "https://schema.mp.microsoft.com/schema/durable-id/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/durable-id/2022-03-01-preview2",
+      "description": "A durable-id to an existing resource.",
+      "type": "string",
+      "pattern": "^[a-z](-?[a-z0-9]\u002B)*/[a-z0-9-]\u002B(\\/?[a-z0-9-])*$"
+    },
+    "https://schema.mp.microsoft.com/schema/validation/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/validation/2022-03-01-preview2",
+      "allOf": [
+        {
+          "$ref": "https://schema.mp.microsoft.com/schema/inner-error/2022-03-01-preview2"
+        },
+        {
+          "properties": {
+            "$schema": {
+              "$ref": "https://schema.mp.microsoft.com/schema/schema-uri/2022-03-01-preview2"
+            },
+            "level": {
+              "type": "string",
+              "enum": [
+                "informational",
+                "warning"
+              ]
+            }
+          },
+          "required": [
+            "level"
+          ]
+        }
+      ]
+    },
+    "https://schema.mp.microsoft.com/schema/inner-error/2022-03-01-preview2": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schema.mp.microsoft.com/schema/inner-error/2022-03-01-preview2",
+      "type": "object",
+      "properties": {
+        "resourceId": {
+          "$ref": "https://schema.mp.microsoft.com/schema/resource-reference/2022-03-01-preview2"
+        },
+        "code": {
+          "type": "string",
+          "readOnly": true,
+          "enum": [
+            "businessValidationError",
+            "collectionLimitExceeded",
+            "invalidId",
+            "invalidEntityStatus",
+            "invalidRequest",
+            "invalidResource",
+            "invalidState",
+            "notDeployed",
+            "notSupported",
+            "operationCanceled",
+            "productLocked",
+            "resourceNotFound",
+            "schemaValidationError"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schema.mp.microsoft.com/schema/inner-error/2022-03-01-preview2"
+          }
+        }
+      },
+      "required": [
+        "code"
+      ]
+    },
+    "imageSource": {
+      "type": "object",
+      "properties": {
+        "sourceType": {
+          "enum": [
+            "sharedImageGallery",
+            "sasUri"
+          ]
+        },
+        "sharedImage": {
+          "$ref": "#/$defs/sharedImage"
+        },
+        "osDisk": {
+          "$ref": "https://schema.mp.microsoft.com/schema/virtual-machine-os-disk/2022-03-01-preview2"
+        },
+        "dataDisks": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schema.mp.microsoft.com/schema/virtual-machine-data-disk/2022-03-01-preview2"
+          },
+          "minItems": 0,
+          "maxItems": 16
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "sourceType": {
+              "const": "sharedImageGallery"
+            }
+          },
+          "required": [
+            "sharedImage"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "osDisk"
+                ]
+              },
+              {
+                "required": [
+                  "dataDisks"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "sourceType": {
+              "const": "sasUri"
+            }
+          },
+          "required": [
+            "osDisk"
+          ],
+          "not": {
+            "required": [
+              "sharedImage"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "imageType": {
+      "enum": [
+        "x64Gen1",
+        "x64Gen2"
+      ]
+    },
+    "sharedImage": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "type": "string"
+        },
+        "resourceId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenantId",
+        "resourceId"
+      ],
+      "additionalProperties": false
+    },
+    "sku": {
+      "type": "object",
+      "properties": {
+        "imageType": {
+          "$ref": "#/$defs/imageType"
+        },
+        "skuId": {
+          "type": "string",
+          "pattern": "^[a-z0-9-_]\u002B$"
+        }
+      },
+      "required": [
+        "imageType",
+        "skuId"
+      ],
+      "additionalProperties": false
+    },
+    "vmImage": {
+      "type": "object",
+      "properties": {
+        "imageType": {
+          "$ref": "#/$defs/imageType"
+        },
+        "source": {
+          "$ref": "#/$defs/imageSource"
+        }
+      },
+      "required": [
+        "imageType",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "vmImageVersion": {
+      "type": "object",
+      "properties": {
+        "versionNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^[0-9]\u002B\\.[0-9]\u002B\\.[0-9]\u002B$"
+        },
+        "vmImages": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/vmImage"
+          }
+        },
+        "lifecycleState": {
+          "$ref": "https://schema.mp.microsoft.com/schema/resource-lifecycle-state/2022-03-01-preview2",
+          "default": "generallyAvailable",
+          "enum": [
+            "generallyAvailable",
+            "deprecated",
+            "deleted"
+          ]
+        },
+        "deprecationSchedule": {
+          "$ref": "https://schema.mp.microsoft.com/schema/deprecation-schedule/2022-03-01-preview2"
+        }
+      },
+      "required": [
+        "versionNumber",
+        "vmImages"
+      ],
+      "additionalProperties": false
+    },
+    "vmProperties": {
+      "type": "object",
+      "properties": {
+        "supportsExtensions": {
+          "type": "boolean",
+          "default": true
+        },
+        "supportsBackup": {
+          "type": "boolean",
+          "default": false
+        },
+        "supportsAcceleratedNetworking": {
+          "type": "boolean",
+          "default": false
+        },
+        "networkVirtualAppliance": {
+          "type": "boolean",
+          "default": false
+        },
+        "supportsNVMe": {
+          "type": "boolean",
+          "default": false
+        },
+        "supportsCloudInit": {
+          "type": "boolean",
+          "default": false
+        },
+        "supportsAadLogin": {
+          "type": "boolean",
+          "default": false
+        },
+        "supportsHibernation": {
+          "type": "boolean",
+          "default": false
+        },
+        "supportsRemoteConnection": {
+          "type": "boolean",
+          "default": true
+        },
+        "requiresCustomArmTemplate": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
