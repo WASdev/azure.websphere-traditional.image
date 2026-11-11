@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Stub curl for publish-vm-image tests. Serves responses from $STUB_DIR and
+# records every non-GET request in $STUB_DIR/posts.log. No network access.
+#
+# Routing key (METHOD_name) from the URL path after the product-ingestion base:
+#   product -> GET_product       plan (first page) -> GET_plan
+#   plan?...continuationToken -> GET_plan_page2
+#   virtual-machine-plan-technical-configuration/... -> GET_techconfig
+#   configure -> POST_configure  configure/<id>/status -> GET_status
+#   login.microsoftonline.com -> POST_token
+# Each route needs <key>.json; <key>.code (default 200) sets the HTTP status.
+# Every request URL is appended to $STUB_DIR/requests.log.
+
+method=GET
+out=/dev/null
+url=""
+data=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -X) method="$2"; shift 2 ;;
+    -o) out="$2"; shift 2 ;;
+    -w|-H) shift 2 ;;
+    -d) data="$2"; shift 2 ;;
+    -s|-S|-sS|-L|--fail) shift ;;
+    http*) url="$1"; shift ;;
+    *) shift ;;
+  esac
+done
+
+echo "$method $url" >> "$STUB_DIR/requests.log"
+[ "$method" != "GET" ] && [ "${url#https://login.microsoftonline.com}" = "$url" ] && echo "$method $url" >> "$STUB_DIR/posts.log"
+[ -n "$data" ] && [ "${url#https://login.microsoftonline.com}" = "$url" ] && printf '%s' "$data" > "$STUB_DIR/last_post_body.json"
+
+case "$url" in
+  https://login.microsoftonline.com/*) key=POST_token ;;
+  */virtual-machine-plan-technical-configuration/*) key=${method}_techconfig ;;
+  */configure/*/status*) key=GET_status ;;
+  */configure*) key=POST_configure ;;
+  */plan*continuationToken*) key=GET_plan_page2 ;;
+  */plan*) key=GET_plan ;;
+  */product*) key=GET_product ;;
+  *) key=UNKNOWN ;;
+esac
+
+if [ "$key" = "UNKNOWN" ] || [ ! -f "$STUB_DIR/$key.json" ]; then
+  echo "stub curl: no fixture for $method $url ($key)" >&2
+  exit 7
+fi
+cat "$STUB_DIR/$key.json" > "$out"
+if [ -f "$STUB_DIR/$key.code" ]; then cat "$STUB_DIR/$key.code"; else printf 200; fi
+exit 0

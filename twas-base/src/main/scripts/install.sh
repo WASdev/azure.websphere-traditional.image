@@ -89,14 +89,12 @@ else
     exit 1
 fi
 
-# Install WebSphere ND V9 from V9WASND (same pattern as ND workflow).
-# BASE is a strict subset of ND - the binaries satisfy all BASE image checks.
-# com.ibm.was.base.moreinfo.v90 plug-in is not available in any accessible repo
-# when installing com.ibm.websphere.BASE.v90 standalone, but ND installs cleanly.
+# Install IBM WebSphere Application Server (Base) V9. The Base offering must be
+# installed; the build fails rather than substituting another edition.
 ${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl install \
     "$WAS_BASE_TRADITIONAL" \
     "$IBM_JAVA_SDK" \
-    -repositories "$REPOSITORY_URL" \
+    -repositories "$BASE_REPOSITORY_URL,$REPOSITORY_URL" \
     -secureStorageFile storage_file \
     -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/ -sharedResourcesDirectory ${IM_SHARED_DIRECTORY}/ \
     -acceptLicense -preferences $SSL_PREF,$DOWNLOAD_PREF -showProgress -log log_file
@@ -105,6 +103,22 @@ if [ $? -eq 0 ]; then
     echo "$(date): IBM WebSphere Application Server V9 installed successfully."
 else
     echo "$(date): IBM WebSphere Application Server V9 failed to be installed."
+    cat log_file 2>/dev/null
+    rm -rf storage_file log_file
+    exit 1
+fi
+
+# Verify the installed edition: Base must be present and ND must not be
+installed=$(${IM_INSTALL_DIRECTORY}/eclipse/tools/imcl listInstalledPackages \
+    -installationDirectory ${WAS_BASE_INSTALL_DIRECTORY}/)
+echo "$installed"
+if ! echo "$installed" | grep -q "$WAS_BASE_TRADITIONAL"; then
+    echo "$(date): Installed packages do not contain $WAS_BASE_TRADITIONAL."
+    rm -rf storage_file log_file
+    exit 1
+fi
+if echo "$installed" | grep -q "$WAS_ND_TRADITIONAL"; then
+    echo "$(date): Installed packages contain $WAS_ND_TRADITIONAL; the Base image must not ship Network Deployment."
     rm -rf storage_file log_file
     exit 1
 fi
